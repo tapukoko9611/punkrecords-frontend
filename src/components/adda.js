@@ -52,7 +52,7 @@ const Adda = ({ socket }) => {
             };
 
             await axios
-                .get(`/wtf/adda/${addaId}`, config)
+                .get(`https://punkrecord-api.onrender.com/wtf/adda/${addaId}`, config)
                 .then((data) => {
                     if (data.data.token) {
                         setAuth({
@@ -163,7 +163,7 @@ const Adda = ({ socket }) => {
                 };
 
                 const data = await axios.post(
-                    `/wtf/adda/${addaId}`,
+                    `https://punkrecord-api.onrender.com/wtf/adda/${addaId}`,
                     {
                         text: inp
                     },
@@ -196,7 +196,7 @@ const Adda = ({ socket }) => {
 
             setInp("");
             const data = await axios.delete(
-                `/wtf/adda/${addaId}`,
+                `https://punkrecord-api.onrender.com/wtf/adda/${addaId}`,
                 config
             );
 

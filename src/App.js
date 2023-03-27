@@ -8,6 +8,7 @@ import Adda from './components/adda';
 import Storage from './components/storage';
 import Incognito from './components/incognito';
 import { AuthContextProvider } from './context/auth-context';
+import Home from './components/home';
 
 const socket = socketIO.connect("http://localhost:5000");
 
@@ -17,6 +18,7 @@ function App() {
     <div className="App" >
       <AuthContextProvider> 
         <Routes>
+          <Route path='/' element={ <Home /> } />
           <Route path="/ayo/adda/:addaId" element={ <Adda socket={socket}/> } />
           <Route path="/ayo/storage/:storageId" element={ <Storage socket={socket}/> } />
           <Route path="/ayo/ign/:query" element={ <Incognito /> } />

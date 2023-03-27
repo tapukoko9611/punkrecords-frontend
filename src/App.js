@@ -18,11 +18,10 @@ function App() {
     <div className="App" >
       <AuthContextProvider> 
         <Routes>
-          {/* <Route path='/' element={ <Home /> } /> */}
+          <Route path='/' element={ <Home /> } />
           <Route path="/ayo/adda/:addaId" element={ <Adda socket={socket}/> } />
           <Route path="/ayo/storage/:storageId" element={ <Storage socket={socket}/> } />
-          {/* <Route path="/ayo/ign/:query" element={ <Incognito /> } /> */}
-          <Route path="/" element={ <Incognito /> } />
+          <Route path="/ayo/ign/:query" element={ <Incognito /> } />
         </Routes>
       </AuthContextProvider>
     </div>

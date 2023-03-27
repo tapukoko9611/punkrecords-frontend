@@ -65,7 +65,7 @@ const Storage = ({ socket }) => {
             };
 
             await axios
-                .get(`/wtf/storage/${storageId}`, config)
+                .get(`https://punkrecord-api.onrender.com/wtf/storage/${storageId}`, config)
                 .then((data) => {
                     // console.log(data);
                     if (data.data.token) {
@@ -135,7 +135,7 @@ const Storage = ({ socket }) => {
 
                 setInp("");
                 const data = await axios.post(
-                    `/wtf/storage/${storageId}`,
+                    `https://punkrecord-api.onrender.com/wtf/storage/${storageId}`,
                     {
                         data: "",
                         name: search.trim(),
@@ -205,7 +205,7 @@ const Storage = ({ socket }) => {
 
                 // setInp("");
                 const data = await axios.put(
-                    `/wtf/storage/${storageId}`,
+                    `https://punkrecord-api.onrender.com/wtf/storage/${storageId}`,
                     {
                         data: inp,
                         name: name,
@@ -294,7 +294,7 @@ const Storage = ({ socket }) => {
 
             setInp("");
             const data = await axios.delete(
-                `/wtf/storage/${storageId}`,
+                `https://punkrecord-api.onrender.com/wtf/storage/${storageId}`,
                 config
             );
             

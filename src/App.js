@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Route, Routes } from 'react-router-dom';
+import { HashRouter, Route, Routes } from 'react-router-dom';
 import socketIO from "socket.io-client";
 
 
@@ -17,16 +17,12 @@ function App() {
   return (
     <div className="App" >
       <AuthContextProvider> 
-        <Routes>
-            <div>
-              <header />
-                <Route path='/ayo' element={ <Home /> } />
+        <HashRouter>
+                <Route path='/' element={ <Home /> } />
                 <Route path="/ayo/adda/:addaId/" element={ <Adda socket={socket}/> } />
                 <Route path="/ayo/storage/:storageId/" element={ <Storage socket={socket}/> } />
                 <Route path="/ayo/ign/:query/" element={ <Incognito /> } />
-              <footer />
-            </div>
-        </Routes>
+        </HashRouter>
       </AuthContextProvider>
     </div>
   );

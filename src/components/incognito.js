@@ -10,7 +10,7 @@ const Incognito = (props) => {
         (async () => {
 
             await axios
-                .get(`https://punkrecord-api.onrender.com/wtf/ign/1&2`)
+                .get(`https://punkrecord-api.onrender.com/wtf/ign/1234a&factorial`)
                 // .get(`https://punkrecord-api.onrender.com/wtf/ign/${query}`)
                 .then((data) => {
                     console.log(data);

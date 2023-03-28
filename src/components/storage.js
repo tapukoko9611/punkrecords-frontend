@@ -10,7 +10,8 @@ import AuthContext from "../context/auth-context";
 // Just use useeEffectt hook isnide and inside it use async on function, not directly
 const Storage = ({ socket }) => {
     const { auth, setAuth } = useContext(AuthContext);
-    let { storageId } = useParams();
+    // let { storageId } = useParams();
+    let storageId = "1234a";
 
     const initState = {
         idatabase: [],

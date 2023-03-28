@@ -19,7 +19,7 @@ function App() {
       <AuthContextProvider> 
         <Routes>
           <Route path='/' element={ <Home /> } />
-          <Route path="ayo/adda/:addaId/" element={ <Adda socket={socket}/> } />
+          <Route path="/adda/:addaId/" element={ <Adda socket={socket}/> } />
           <Route path="/ayo/storage/:storageId/" element={ <Storage socket={socket}/> } />
           <Route path="/ayo/ign/:query/" element={ <Incognito /> } />
         </Routes>

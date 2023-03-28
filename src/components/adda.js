@@ -12,7 +12,8 @@ import styled from "styled-components";
 // Just use useeEffectt hook isnide and inside it use async on function, not directly
 const Adda = ({ socket }) => {
     const { auth, setAuth } = useContext(AuthContext);
-    let { addaId } = useParams();
+    // let { addaId } = useParams();
+    let addaId = "123";
 
     const [ inp, setInp ] = useState("");
     const divRef = useRef(null);

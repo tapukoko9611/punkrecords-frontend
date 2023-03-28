@@ -391,6 +391,7 @@ By wrapping the function with an arrow function, the evaluated code will result 
                     placeholder="Enterrr Content"
                     onKeyDown={() => setChange(session)}
                     onChange={e => {setPrevInp(inp); setInp(e.target.value)}}
+                    value={inp}
                 />
             }
 

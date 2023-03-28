@@ -379,12 +379,18 @@ By wrapping the function with an arrow function, the evaluated code will result 
 
             { 
              name && type==="UPDATE" &&
-                <input 
-                    value={inp} 
-                    type="text" 
+                // <input 
+                //     value={inp} 
+                //     type="text" 
+                //     onKeyDown={() => setChange(session)}
+                //     onChange={e => {setPrevInp(inp); setInp(e.target.value)}}
+                //     placeholder="Enterr Content" 
+                // />
+                <textarea 
+                    rows="5"
+                    placeholder="Enterrr Content"
                     onKeyDown={() => setChange(session)}
                     onChange={e => {setPrevInp(inp); setInp(e.target.value)}}
-                    placeholder="Enterr Content" 
                 />
             }
 

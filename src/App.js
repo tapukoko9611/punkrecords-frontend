@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Route, Routes } from 'react-router-dom';
+import { HashRouter, Route, Routes } from 'react-router-dom';
 import socketIO from "socket.io-client";
 
 
@@ -17,15 +17,17 @@ function App() {
   return (
     <div className="App" >
       <AuthContextProvider> 
-        <Routes>
-          <Route path="/" element={ <Incognito /> } exact />
-          {/* <Route path='/' element={ <Home /> } /> */}
-          {/* <Route path="/" element={ <Adda socket={socket}/> } exact/> */}
-          {/* <Route path="/ayo/adda/:addaId/" element={ <Adda socket={socket}/> } exact/> */}
-          {/* <Route path="/ayo/storage/:storageId/" element={ <Storage socket={socket}/> } exact /> */}
-          {/* <Route path="/ayo/ign/:query/" element={ <Incognito /> } /> */}
-          {/* <Route path="/" element={ <Storage socket={socket}/> } exact /> */}
-        </Routes>
+        <HashRouter>
+          <Routes>
+            {/* <Route path="/" element={ <Incognito /> } exact /> */}
+            <Route path='/' element={ <Home /> } exact />
+            {/* <Route path="/" element={ <Adda socket={socket}/> } exact/> */}
+            <Route path="/ayo/adda/:addaId/" element={ <Adda socket={socket}/> } />
+            <Route path="/ayo/storage/:storageId/" element={ <Storage socket={socket}/> } />
+            <Route path="/ayo/ign/:query/" element={ <Incognito /> } />
+            {/* <Route path="/" element={ <Storage socket={socket}/> } exact /> */}
+          </Routes>
+        </HashRouter>
       </AuthContextProvider>
     </div>
   );

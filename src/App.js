@@ -16,7 +16,6 @@ function App() {
 
   return (
     <div className="App" >
-      <AuthContextProvider> 
           <Routes>
             {/* <Route path="/" element={ <Incognito /> } exact /> */}
             <Route path='/' element={ <Home /> } exact />
@@ -26,7 +25,6 @@ function App() {
             <Route path="/ayo/ign/:query/" element={ <Incognito /> } />
             {/* <Route path="/" element={ <Storage socket={socket}/> } exact /> */}
           </Routes>
-      </AuthContextProvider>
     </div>
   );
 }

@@ -10,13 +10,13 @@ import { AuthContextProvider } from './context/auth-context';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
-    <BrowserRouter >
+    <HashRouter basename='/ayo' >
     <AuthContextProvider>
       {/* <React.StrictMode> */}
         <App />
       {/* </React.StrictMode> */}
     </AuthContextProvider>
-    </BrowserRouter>
+    </HashRouter>
 );
 
 

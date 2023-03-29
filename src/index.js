@@ -10,7 +10,7 @@ import { AuthContextProvider } from './context/auth-context';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
-    <HashRouter basename='/ayo' >
+    <HashRouter>
     <AuthContextProvider>
       {/* <React.StrictMode> */}
         <App />

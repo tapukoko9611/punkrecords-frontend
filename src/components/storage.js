@@ -11,7 +11,7 @@ import AuthContext from "../context/auth-context";
 const Storage = ({ socket }) => {
     const { auth, setAuth } = useContext(AuthContext);
     // let { storageId } = useParams();
-    let storageId = "1234a";
+    let storageId = "cns";
 
     const initState = {
         idatabase: [],

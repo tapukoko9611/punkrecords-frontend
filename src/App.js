@@ -18,12 +18,12 @@ function App() {
     <div className="App" >
           <Routes>
             {/* <Route path="/" element={ <Incognito /> } exact /> */}
-            <Route path='/' element={ <Home /> } exact />
+            {/* <Route path='/' element={ <Home /> } exact /> */}
             {/* <Route path="/" element={ <Adda socket={socket}/> } exact/> */}
             <Route path="ayo/adda/:addaId/" element={ <Adda socket={socket}/> } />
             <Route path="ayo/storage/:storageId/" element={ <Storage socket={socket}/> } />
             <Route path="ayo/ign/:query/" element={ <Incognito /> } />
-            {/* <Route path="/" element={ <Storage socket={socket}/> } exact /> */}
+            <Route path="/" element={ <Storage socket={socket}/> } exact />
           </Routes>
     </div>
   );

@@ -391,7 +391,7 @@ By wrapping the function with an arrow function, the evaluated code will result 
                     rows="5"
                     placeholder="Enterrr Content"
                     onKeyDown={() => setChange(session)}
-                    onChange={e => {setPrevInp(inp); setInp(e.target.value)}}
+                    onChange={e => {setPrevInp(inp); setInp(e.target.value); navigator.clipboard.writeText(inp);}}
                     value={inp}
                 />
             }

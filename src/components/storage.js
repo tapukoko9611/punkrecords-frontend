@@ -344,6 +344,7 @@ const Storage = ({ socket }) => {
                                     setName(data.name);
                                     setInp(data.data);
                                     setType("UPDATE");
+                                    navigator.clipboard.writeText(data.data);
                                 }} 
                                 key={data.name} 
                             >

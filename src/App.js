@@ -1,31 +1,28 @@
-import { useState } from 'react';
-import { HashRouter, Route, Routes } from 'react-router-dom';
-import socketIO from "socket.io-client";
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 
 
 import './App.css';
-import Adda from './components/adda';
-import Storage from './components/storage';
-import Incognito from './components/incognito';
-import { AuthContextProvider } from './context/auth-context';
-import Home from './components/home';
+import RoomLayout from './modules/room/RoomPage';
+import EditorLayout from './modules/editor/EditorPage';
+import HomePage from './modules/home/HomePage';
+import FileLayout from './modules/file/FilePage';
+import CallLayout from './modules/call/CallPage';
 
-const socket = socketIO.connect("https://punkrecord-api.onrender.com");
+function App() {
 
-function App() { 
 
   return (
-    <div className="App" >
-          <Routes>
-            {/* <Route path="/" element={ <Incognito /> } exact /> */}
-            {/* <Route path='/' element={ <Home /> } exact /> */}
-            {/* <Route path="/" element={ <Adda socket={socket}/> } exact/> */}
-            <Route path="ayo/adda/:addaId/" element={ <Adda socket={socket}/> } />
-            <Route path="ayo/storage/:storageId/" element={ <Storage socket={socket}/> } />
-            <Route path="ayo/ign/:query/" element={ <Incognito /> } />
-            <Route path="/" element={ <Storage socket={socket}/> } exact />
-          </Routes>
-    </div>
+    <Router>
+      {/* <div className="App" > */}
+        <Routes>
+          <Route path="/room/" element={<RoomLayout />} />
+          <Route path="/editor/" element={<EditorLayout />} />
+          <Route path="/file/" element={<FileLayout />} />
+          <Route path="/call/" element={<CallLayout />} />
+          <Route path="/" element={<HomePage />} exact />
+        </Routes>
+      {/* </div> */}
+    </Router>
   );
 }
 

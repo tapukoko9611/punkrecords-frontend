@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import CompTopBar from '../TopBar/CompTopBar';
 import TextSpace from './TextSpace';
 
@@ -79,10 +79,10 @@ const EditorPanel1 = ({ activeEditor, toggleSidebar, sidebarOpen, editor }) => {
     <div className="flex-1 flex flex-col">
       <CompTopBar compName={activeEditor} toggleSidebar={toggleSidebar} sidebarOpen={sidebarOpen} comp={editor} />
       {
-        editor && <TextSpace editor={editor}/>
+        editor && <TextSpace editor={editor} />
       }
     </div>
   );
-}; 
+};
 
 export default EditorPanel;

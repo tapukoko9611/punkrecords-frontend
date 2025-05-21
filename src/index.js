@@ -13,7 +13,3 @@ root.render(
       <App />
     </AppProviders>
 );
-
-
-// react-router-dom
-// styled-components

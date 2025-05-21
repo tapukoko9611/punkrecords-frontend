@@ -1,36 +1,100 @@
-// src/context/UserContext.js
-import { createContext, useReducer } from 'react';
+import React, { createContext, useReducer, useEffect, useCallback } from 'react';
 
-export const UserContext = createContext();
-
-const initialState = {
+const initialStateAuth = {
+  isAuthenticated: false,
   user: null,
-  userToken: null,
-  loading: false,
+  token: null, 
+  isLoading: false,
   error: null,
 };
 
-const userReducer = (state, action) => {
+const authReducer = (state, action) => {
   switch (action.type) {
-    case 'START_LOADING':
-      return { ...state, loading: true, error: null };
-    case 'SET_USER':
-      return { ...state, user: action.user, userToken: action.userToken, loading: false };
-    case 'SET_ERROR':
-      return { ...state, error: action.payload, loading: false };
+    case 'LOGIN_REQUEST':
+    case 'SIGNUP_REQUEST':
+    case 'REAUTHENTICATE_REQUEST':
+      return { ...state, isLoading: true, error: null };
+    case 'LOGIN_SUCCESS':
+      // console.log("reducer - login success")
+      return {
+        ...state,
+        isAuthenticated: true,
+        user: action.payload.user,
+        token: action.payload.token,
+        isLoading: false,
+        error: null,
+      };
+    case 'SIGNUP_SUCCESS':
+      // console.log("reducer - signup success")
+      return {
+        ...state,
+        isAuthenticated: true,
+        user: action.payload.user,
+        token: action.payload.token,
+        isLoading: false,
+        error: null,
+      };
+    case 'REAUTHENTICATE_SUCCESS':
+      // console.log("reducer - reAuth success")
+      return {
+        ...state,
+        isAuthenticated: true,
+        user: action.payload.user,
+        token: action.payload.token,
+        isLoading: false,
+        error: null,
+      };
+    case 'LOGIN_FAILURE':
+    case 'SIGNUP_FAILURE':
+    case 'REAUTHENTICATE_FAILURE':
+      return { ...state, isLoading: false, error: action.payload };
     case 'LOGOUT':
-      return { ...state, user: null, userToken: null };
+      return { ...state, isAuthenticated: false, user: null, token: null };
+    case 'SET_USER': 
+      // console.log("reducer - registered user set")
+      return { ...state, user: action.payload, isAuthenticated: true };
+    case 'SET_IMMIGRANT': 
+      // console.log("reducer - guest user set")
+      return { ...state, user: action.payload, isAuthenticated: false };
+    case 'SET_TOKEN':
+      return { ...state, token: action.payload };
+    case 'CLEAR_ERROR':
+      return { ...state, error: null };
     default:
       return state;
   }
 };
 
-export const UserProvider = ({ children }) => {
-  const [state, dispatch] = useReducer(userReducer, initialState);
+const AuthContext = createContext({
+  state: initialStateAuth,
+  dispatch: () => { },
+});
+
+const AuthProvider = ({ children }) => {
+  const [state, dispatch] = useReducer(authReducer, initialStateAuth);
+
+  useEffect(() => {
+      // console.log("user context - Updating token");
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      dispatch({ type: 'SET_TOKEN', payload: token });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (state.token) {
+      // console.log("user context - Saving token");
+      localStorage.setItem('authToken', state.token);
+    } else {
+      localStorage.removeItem('authToken');
+    }
+  }, [state.token]);
 
   return (
-    <UserContext.Provider value={{ state, dispatch }}>
+    <AuthContext.Provider value={{ state, dispatch }}>
       {children}
-    </UserContext.Provider>
+    </AuthContext.Provider>
   );
 };
+
+export { AuthContext, AuthProvider }

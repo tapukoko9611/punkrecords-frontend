@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import CompTopBar from '../TopBar/CompTopBar';
 import FileSpace from './FileSpace';
 
@@ -79,7 +79,7 @@ const FilePanel1 = ({ activeFile, toggleSidebar, sidebarOpen, file }) => {
     <div className="flex-1 flex flex-col">
       <CompTopBar compName={activeFile} toggleSidebar={toggleSidebar} sidebarOpen={sidebarOpen} comp={file} />
       {
-        file && <FileSpace file={file}/>
+        file && <FileSpace file={file} />
       }
     </div>
   );

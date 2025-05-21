@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { FiSend } from 'react-icons/fi';
 
-const MessageInput = () => {
+const MessageInput = ({room, userId, sendMessage}) => {
   const [input, setInput] = useState('');
+  var replyTo = null;
 
   const handleSend = () => {
     if (input.trim() === '') return;
-    console.log('Send:', input);
+    sendMessage(input, replyTo);
     setInput('');
   };
 

@@ -10,7 +10,6 @@ export default function AppProviders({ children }) {
   return (
     <SocketProvider>
       <AuthProvider>
-        {/* <SocketProvider> */}
           <RoomProvider>
           <EditorProvider>
             <FileProvider>
@@ -20,7 +19,6 @@ export default function AppProviders({ children }) {
             </FileProvider>
           </EditorProvider>
         </RoomProvider>
-        {/* </SocketProvider> */}
       </AuthProvider>
     </SocketProvider>
   );

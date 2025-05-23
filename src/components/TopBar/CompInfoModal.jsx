@@ -2,11 +2,9 @@ import React, { useState } from 'react';
 import { FiX } from 'react-icons/fi';
 
 const CompInfoModal = ({ comp, isCreator, onClose, onUpdatePrivacy, compName }) => {
-  // Local state for privacy editing — these default to comp settings.
   const [isPrivate, setIsPrivate] = useState(comp.isPrivate);
   const [password, setPassword] = useState(comp.password || '');
 
-  // Calculate number of participants (assuming comp.participants is an object)
   const participantCount = comp.participants
     ? Object.keys(comp.participants).length
     : 0;
@@ -19,7 +17,6 @@ const CompInfoModal = ({ comp, isCreator, onClose, onUpdatePrivacy, compName }) 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
       <div className="bg-gray-900 p-6 rounded-lg shadow-xl w-96 border border-gray-700 relative">
-        {/* Close Button */}
         <button
           onClick={onClose}
           className="absolute top-2 right-2 text-gray-400 hover:text-white"
@@ -42,7 +39,6 @@ const CompInfoModal = ({ comp, isCreator, onClose, onUpdatePrivacy, compName }) 
           <p className="text-white">{participantCount}</p>
         </div>
 
-        {/* If user is not the creator, just show info */}
         {!isCreator && (
           <div className="mb-4">
             <p className="text-gray-400">Private:</p>
@@ -50,7 +46,6 @@ const CompInfoModal = ({ comp, isCreator, onClose, onUpdatePrivacy, compName }) 
           </div>
         )}
 
-        {/* If the user is the comp creator, allow editing privacy */}
         {isCreator && (
           <>
             <div className="mb-4">

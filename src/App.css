@@ -1,16 +1,11 @@
-/* Hide the vertical scrollbar on the html element */
 html {
   overflow-y: hidden;
-  /* Prevent vertical scrollbar */
 }
 
-/* If the body is causing it, try this instead or in addition */
 body {
   overflow-y: hidden;
-  /* Prevent vertical scrollbar */
 }
 
-/* Styles for remote video containers */
 .remote-videos {
   display: grid;
   grid-template-columns: repeat(auto-fill, 200px);

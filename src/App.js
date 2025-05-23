@@ -14,31 +14,17 @@ import { SocketContext } from "./context/SocketContext";
 import authApi from "./api/userApi";
 import { RoomContext } from './context/RoomContext';
 
-
-import useAuthSockets from './sockets/T_TauthSockets';
 import useRoomSockets6 from './sockets/roomSockets';
-function App2() {
-  // Use the new hook for auth-related socket logic
-  useAuthSockets();
-
-  return (
-    <Router>
-      <Routes>
-        <Route path="/room/:id?" element={<RoomLayout />} />
-        <Route path="/editor/:id?" element={<EditorLayout />} />
-        <Route path="/file/:id?" element={<FileLayout />} />
-        <Route path="/call/:id?" element={<CallLayout />} />
-        <Route path="/" element={<HomePage />} />
-      </Routes>
-    </Router>
-  );
-}
+import { EditorContext } from './context/EditorContext';
+import useEditorSockets from './sockets/editorSockets';
 
 
 function App() {
   const { state, dispatch } = useContext(AuthContext);
   const { state: roomState, dispatch: roomDispatch } = useContext(RoomContext);
-  const { emitCheckRoom, emitJoinRoom, emitInitialMessages } = useRoomSockets6(roomDispatch, dispatch);
+  const { state: editorState, dispatch: editorDispatch } = useContext(EditorContext);
+  const { emitJoinRoom } = useRoomSockets6(roomDispatch, dispatch);
+  const { emitJoinEditor } = useEditorSockets(editorDispatch, dispatch);
   const socket = useContext(SocketContext);
 
   useEffect(() => {
@@ -46,37 +32,38 @@ function App() {
     if (socket) {
       socket.on("connected", async () => {
         if (!state.token || !state.user) {
-          // console.log("socket - Asking for authenticate");
           socket.emit('authenticate', { token: localStorage.getItem('authToken') || null });
         }
       })
 
       socket.on('authenticated', async (data) => {
         if (data && data.token) {
-          // console.log("socket - Authenticated: ", data.token)
           dispatch({ type: 'SET_TOKEN', payload: data.token });
-          // console.log("socket - calling getUserAPI");
           var { isError, message, data, token } = await authApi.getUser(data.token);
           if (!isError) {
-            // console.log("socket - got userDetails: ", data.user?._id);
             var { user, rooms, editors, files, calls } = data;
+
             if (user.type == "Immigrant") {
               dispatch({ type: "SET_IMMIGRANT", payload: user })
-              roomDispatch({ type: "SET_ROOMS", payload: rooms });
             }
             else {
-              // console.log("socket - setting user after authentication");
               dispatch({ type: "SET_USER", payload: user });
-              roomDispatch({ type: "SET_ROOMS", payload: rooms });
             }
+
+            roomDispatch({ type: "SET_ROOMS", payload: rooms });
+            editorDispatch({ type: "SET_EDITORS", payload: editors });
 
             for (const key in rooms) {
               if (rooms.hasOwnProperty(key)) {
-              emitJoinRoom(rooms[key].name, data.token, "Initial");
+                emitJoinRoom(rooms[key].name, data.token, "Initial");
+              }
+            }
+            for (const key in editors) {
+              if (editors.hasOwnProperty(key)) {
+                emitJoinEditor(editors[key].name, data.token, "Initial");
               }
             }
 
-            // dispatch({ type: "LOGS", payload: { user, token } })
           }
         }
       });
@@ -84,30 +71,32 @@ function App() {
       // Listen for 're-authenticated' event (response to re-authenticate after login)
       socket.on('re-authenticated', async (data) => {
         if (data && data.token) {
-          // console.log("socket - Re authenticated: ", data.token)
           dispatch({ type: 'SET_TOKEN', payload: data.token });
-          // console.log("socket - calling getUserAPI");
           var { isError, message, data, token } = await authApi.getUser(data.token);
           if (!isError) {
-            // console.log("socket - got userDetails: ", data.user?._id);
             var { user, rooms, editors, files, calls } = data;
+
             if (user.type == "IMMIGRANT") dispatch({ type: "SET_IMMIGRANT", payload: user })
-            else {
-              // console.log("socket - setting user after Re authentication");
-              dispatch({ type: "SET_USER", payload: user });
-              roomDispatch({ type: "SET_ROOMS", payload: rooms });
-            }
+            else dispatch({ type: "SET_USER", payload: user });
+
+            roomDispatch({ type: "SET_ROOMS", payload: rooms });
+            editorDispatch({ type: "SET_EDITORS", payload: editors });
+
             for (const key in rooms) {
               if (rooms.hasOwnProperty(key)) {
-                console.log("sending");
-              emitJoinRoom(rooms[key].name, data.token, "Initial");
+                emitJoinRoom(rooms[key].name, data.token, "Initial");
               }
             }
+            for (const key in editors) {
+              if (editors.hasOwnProperty(key)) {
+                emitJoinEditor(editors[key].name, data.token, "Initial");
+              }
+            }
+
           }
         }
       });
 
-      // Clean up event listeners on unmount
       return () => {
         if (socket) {
           socket.off('authenticated');
@@ -120,15 +109,13 @@ function App() {
 
   return (
     <Router>
-      {/* <div className="App" > */}
       <Routes>
-        <Route path="/room/:id?" element={<RoomLayout />} /> {/* Optional :id */}
-        <Route path="/editor/:id?" element={<EditorLayout />} /> {/* Optional :id */}
-        <Route path="/file/:id?" element={<FileLayout />} /> {/* Optional :id */}
-        <Route path="/call/:id?" element={<CallLayout />} /> {/* Optional :id */}
-        <Route path="/" element={<HomePage />} /> {/* Your default landing page */}
+        <Route path="/room/:id?" element={<RoomLayout />} />
+        <Route path="/editor/:id?" element={<EditorLayout />} />
+        <Route path="/file/:id?" element={<FileLayout />} />
+        <Route path="/call/:id?" element={<CallLayout />} />
+        <Route path="/" element={<HomePage />} />
       </Routes>
-      {/* </div> */}
     </Router>
   );
 }

@@ -1,7 +1,87 @@
 import { useState, useEffect, useRef } from 'react';
+import { useDebounce } from './useDebounce';
 
-const TextSpace = ({ editor, onTextChange }) => {
-  const [text, setText] = useState(editor.text);  // Local state for the text content
+export const TextSpace = ({ editorContent, onTextChange }) => {
+  const [content, setContent] = useState(editorContent || '');
+  const lines = content.split('\n');
+  const textAreaRef = useRef(null);
+  const lineNumberRef = useRef(null);
+
+  const debouncedUpdate = useDebounce((newContent) => {
+    onTextChange(newContent);
+  }, 300);
+
+  const handleChange = (e) => {
+    const newContent = e.target.value;
+    setContent(newContent);
+    debouncedUpdate(newContent);
+  };
+
+  const handleScroll = () => {
+    if (lineNumberRef.current && textAreaRef.current) {
+      lineNumberRef.current.scrollTop = textAreaRef.current.scrollTop;
+    }
+  };
+
+  return (
+    <div
+      className="editor-wrapper"
+      style={{
+        display: 'grid',
+        gridTemplateColumns: '50px 1fr',
+        position: 'relative',
+        height: '100%',
+        overflow: 'hidden',
+        color: '#555'
+      }}
+    >
+      {/* Line Numbers Pane */}
+      <div
+        ref={lineNumberRef}
+        style={{
+          backgroundColor: '#2d2d2d',
+          color: '#999',
+          padding: '4px 8px',
+          fontFamily: 'monospace',
+          fontSize: '14px',
+          lineHeight: '20px',
+          textAlign: 'right',
+          overflowY: 'hidden'
+        }}
+      >
+        {lines.map((_, i) => (
+          <div key={i} style={{ height: '20px' }}>
+            {i + 1}
+          </div>
+        ))}
+      </div>
+
+      {/* Text Editing Pane */}
+      <textarea
+        ref={textAreaRef}
+        value={content}
+        onChange={handleChange}
+        onScroll={handleScroll}
+        spellCheck="false"
+        style={{
+          fontFamily: 'monospace',
+          fontSize: '14px',
+          lineHeight: '20px',
+          padding: '4px 8px',
+          resize: 'none',
+          overflow: 'auto',
+          border: 'none',
+          outline: 'none',
+          width: '100%',
+          height: '100%'
+        }}
+      />
+    </div>
+  );
+};
+
+export const TextSpace1 = ({ editor, onTextChange }) => {
+  const [text, setText] = useState(editor.content);
   const textareaRef = useRef(null);
   const lineNumbersRef = useRef(null);
   const editorContainerRef = useRef(null);
@@ -9,26 +89,29 @@ const TextSpace = ({ editor, onTextChange }) => {
   // Split text by lines
   const lines = text.split('\n');
 
-  // Sync local state with the prop `editor.text`
+  const debouncedUpdate = useDebounce((newContent) => {
+    onTextChange(newContent);
+  }, 300);
+
   useEffect(() => {
-    if (editor.text !== text) {
-      setText(editor.text);  // Update local state whenever the `editor.text` prop changes
+    if (editor.content !== text) {
+      setText(editor.content);
     }
-  }, [editor.text]);  // Only re-run when `editor.text` changes
+  }, [editor.content]);
 
   const handleChange = (event) => {
     const newText = event.target.value;
-    setText(newText);  // Update local state on text change
-    if (onTextChange) {
-      onTextChange(newText);  // Propagate change to parent
-    }
+    setText(newText);
+    // if (onTextChange) {
+    //   onTextChange(newText);
+    // }
+    debouncedUpdate(newText);
   };
 
   // Sync scroll positions of text and line numbers
   const handleScroll = () => {
     if (textareaRef.current && lineNumbersRef.current) {
       lineNumbersRef.current.scrollTop = textareaRef.current.scrollTop;
-      // Sync horizontal scroll as well
       lineNumbersRef.current.scrollLeft = textareaRef.current.scrollLeft;
     }
   };
@@ -57,8 +140,8 @@ const TextSpace = ({ editor, onTextChange }) => {
         className="w-12 pr-2 text-right text-gray-500 text-sm pt-2 flex-shrink-0 sticky left-0 bg-gray-900 select-none"
         style={{
           maxHeight: '100%',
-          overflowX: 'hidden',      // Prevent horizontal overflow on line numbers
-          overflowY: 'hidden',      // Prevent vertical overflow on line numbers
+          overflowX: 'hidden',
+          overflowY: 'hidden',
         }}
       >
         {lines.map((_, index) => (
@@ -91,4 +174,4 @@ const TextSpace = ({ editor, onTextChange }) => {
   );
 };
 
-export default TextSpace;
+// module.exports = {TextSpace, TextSpace1}

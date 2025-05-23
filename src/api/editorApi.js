@@ -1,23 +1,23 @@
 import axios from 'axios';
 
-const API_BASE_URL = '/api/rooms';
+const API_BASE_URL = '/api/editors';
 
-const roomApi = {
-    checkRoomName: async (token, roomName) => {
+const editorApi = {
+    checkEditorName: async (token, editorName) => {
         try {
-            const response = await axios.get(`${API_BASE_URL}/exists/${roomName}`, {}, { 
+            const response = await axios.get(`${API_BASE_URL}/exists/${editorName}`, {}, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             return response.data.data.exists;
         } catch (error) {
-            console.error("Error checking room name:", error);
+            console.error("Error checking editor name:", error);
             return true;
         }
     },
 
-    updateRoom: async (roomName, isPrivate, password, token) => {
+    updateEditor: async (editorName, isPrivate, password, token) => {
             try {
-                const response = await axios.put(`${API_BASE_URL}/update`, { roomName, password, isPrivate }, {
+                const response = await axios.put(`${API_BASE_URL}/update`, { editorName, password, isPrivate }, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 return response.data;
@@ -27,4 +27,4 @@ const roomApi = {
         },
 };
 
-export default roomApi;
+export default editorApi;

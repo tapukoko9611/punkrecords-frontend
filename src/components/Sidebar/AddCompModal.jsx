@@ -3,12 +3,11 @@ import { FiX } from 'react-icons/fi';
 
 const AddCompModal = ({ compType = 'Room', onClose, onCreate, checkCompExists }) => {
   const [compName, setCompName] = useState('');
-  const [compNameAvailability, setCompNameAvailability] = useState(null); // true if exists, false if available
+  const [compNameAvailability, setCompNameAvailability] = useState(null);
   const [isPrivate, setIsPrivate] = useState(false);
   const [password, setPassword] = useState('');
   const [checkLoading, setCheckLoading] = useState(false);
 
-  // Debounce the compName availability check (similar to your AuthModal's username check)
   useEffect(() => {
     if (!compName.trim()) {
       setCompNameAvailability(null);
@@ -25,7 +24,7 @@ const AddCompModal = ({ compType = 'Room', onClose, onCreate, checkCompExists })
   }, [compName, checkCompExists]);
 
   const handleSubmit = () => {
-    if (!compName.trim()) return; // require a name
+    if (!compName.trim()) return;
     if (isPrivate && !password.trim()) {
       alert("Please enter a password for the private component.");
       return;
@@ -35,7 +34,6 @@ const AddCompModal = ({ compType = 'Room', onClose, onCreate, checkCompExists })
       return;
     }
 
-    // Dispatch the creation of the new component
     onCreate({ compName, isPrivate, password });
     onClose();
   };
@@ -76,7 +74,6 @@ const AddCompModal = ({ compType = 'Room', onClose, onCreate, checkCompExists })
           )}
         </div>
 
-        {/* Privacy Toggle */}
         <div className="mb-4">
           <label className="inline-flex items-center">
             <input
@@ -89,7 +86,6 @@ const AddCompModal = ({ compType = 'Room', onClose, onCreate, checkCompExists })
           </label>
         </div>
 
-        {/* Password Field (only if private) */}
         {isPrivate && (
           <div className="mb-4">
             <input
@@ -102,7 +98,6 @@ const AddCompModal = ({ compType = 'Room', onClose, onCreate, checkCompExists })
           </div>
         )}
 
-        {/* Submit Button */}
         <button
           onClick={handleSubmit}
           className="w-full py-3 bg-blue-600 rounded-md text-white font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"

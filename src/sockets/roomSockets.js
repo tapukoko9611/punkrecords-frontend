@@ -7,7 +7,6 @@ let roomListenersInitialized = false;
 const useRoomSockets6 = (dispatch, authDispatch) => {
     const socket = useContext(SocketContext);
 
-    // Always remove any previous listeners (this ensures you don’t stack them)
     const removeListeners = useCallback(() => {
         if (socket) {
             socket.off('room:searched');
@@ -23,11 +22,9 @@ const useRoomSockets6 = (dispatch, authDispatch) => {
     useEffect(() => {
         if (!socket) return;
         if (!roomListenersInitialized) {
-            // Remove any stale listeners and attach new ones
             removeListeners();
             socket.on('room:searched', (result) => {
                 if (!result.isError) {
-                    //   console.log("socket - got search/create/get room: ", result.data.room);
                     dispatch({ type: 'SET_TEMP_ROOM', payload: { room: result.data.room } });
                 } else {
                     dispatch({ type: 'ROOM_ERROR', payload: result.message });
@@ -36,7 +33,6 @@ const useRoomSockets6 = (dispatch, authDispatch) => {
 
             socket.on('room:updated', (result) => {
                 if (!result.isError) {
-                    //   console.log("socket - got search/create/get room: ", result.data.room);
                     dispatch({ type: 'SET_UPDATED_ROOM', payload: { room: result.data.room } });
                     alert("room updated");
                 } else {
@@ -46,9 +42,7 @@ const useRoomSockets6 = (dispatch, authDispatch) => {
 
             socket.on('room:joined', (result) => {
                 if (!result.isError) {
-                    //   console.log("socket - joined room: ", result.data.room);
                     if (result.type != "Initial") dispatch({ type: 'SWAP_TEMP_ROOM', payload: { room: result.data.room } });
-                    // Trigger initial messages after joining.
                     emitInitialMessages(result.data.room._id, "");
                 } else {
                     dispatch({ type: 'ROOM_ERROR', payload: result.message });
@@ -57,7 +51,6 @@ const useRoomSockets6 = (dispatch, authDispatch) => {
 
             socket.on('room:messages:initial', (result) => {
                 if (!result.isError) {
-                    // console.log("socket - got initial message: ", result.data.room.name);
                     dispatch({
                         type: 'ADD_MESSAGES', payload: {
                             roomId: result.data.room._id,
@@ -71,8 +64,6 @@ const useRoomSockets6 = (dispatch, authDispatch) => {
                 }
             });
 
-            // Register other event handlers similarly…
-
             socket.on('room:message:new', (messages) => {
                 dispatch({
                     type: 'ADD_MESSAGES', payload: {
@@ -85,7 +76,6 @@ const useRoomSockets6 = (dispatch, authDispatch) => {
 
             socket.on('room:messages:loadedMore', (result) => {
                 if (!result.isError) {
-                    //   console.log("socket - loaded more messages room: ", result.data.messages);
                     dispatch({
                         type: 'ADD_MESSAGES', payload: {
                             roomId: result.data.room._id,
@@ -98,7 +88,6 @@ const useRoomSockets6 = (dispatch, authDispatch) => {
                 }
             });
 
-            // Global error handler
             socket.on('room:error', (error) => {
                 console.error("Room Socket Error:", error.message);
                 dispatch({ type: 'ROOM_ERROR', payload: error.message });
@@ -107,18 +96,11 @@ const useRoomSockets6 = (dispatch, authDispatch) => {
             roomListenersInitialized = true;
         }
 
-        return () => {
-            // Optionally, you can remove listeners on unmount, but in Strict Mode the component might unmount and remount.
-            // If you remove the listeners here, they may be re-added immediately in development.
-            // removeListeners();
-            // roomListenersInitialized = false;
-        };
+        return () => {};
     }, [socket, dispatch, removeListeners]);
 
-    // The emit functions – using useCallback retains stable references
     const emitCheckRoom = useCallback((roomName, privacy = false, password = "", token) => {
         if (socket && socket.connected) {
-            //   console.log("socket - emit search/create/get room: ", roomName);
             socket.emit('room:search', { roomName, privacy, password, token });
         } else {
             console.warn("Socket not connected, cannot emit 'room:search'.");
@@ -135,7 +117,6 @@ const useRoomSockets6 = (dispatch, authDispatch) => {
 
     const emitJoinRoom = useCallback((roomName, token, type = "No") => {
         if (socket && socket.connected) {
-            //   console.log("socket - emit join room: ", roomName);
             socket.emit('room:join', { roomName, type, token, type });
         } else {
             console.warn("Socket not connected, cannot emit 'room:join'.");
@@ -144,8 +125,6 @@ const useRoomSockets6 = (dispatch, authDispatch) => {
 
     const emitInitialMessages = useCallback((roomId, token) => {
         if (socket && socket.connected) {
-            //   console.log("socket - emit initial messages room: ", roomId);
-            // console.log("emitting initial messages", roomId);
             socket.emit('room:messages:initial', { roomId, token });
         } else {
             console.warn("Socket not connected, cannot emit 'room:messages:initial'.");
@@ -154,7 +133,6 @@ const useRoomSockets6 = (dispatch, authDispatch) => {
 
     const emitSendMessage = useCallback((roomName, text, replyTo, token) => {
         if (socket && socket.connected) {
-            //   console.log("socket - send message: ", roomName, text);
             socket.emit('room:message:send', { roomName, text, replyTo, token });
         } else {
             console.warn("Socket not connected, cannot emit 'room:message:send'.");
@@ -163,7 +141,6 @@ const useRoomSockets6 = (dispatch, authDispatch) => {
 
     const emitLoadMoreMessages = useCallback((roomId, skip, token) => {
         if (socket && socket.connected) {
-            //   console.log("socket - emit load more messages room: ", roomId);
             socket.emit('room:messages:loadMore', { roomId, skip, token });
         } else {
             console.warn("Socket not connected, cannot emit 'room:messages:loadMore'.");

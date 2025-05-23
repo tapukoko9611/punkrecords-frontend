@@ -1,8 +1,104 @@
-import React, { useState, useRef, useEffect } from 'react';
-import CompTopBar from '../TopBar/CompTopBar';
-import TextSpace from './TextSpace';
 
-const EditorPanel = ({ activeEditor, toggleSidebar, sidebarOpen, editor }) => {
+import React, { useState, useEffect, useRef, useContext } from 'react';
+import {TextSpace, TextSpace1} from './TextSpace';
+import CompTopBar from '../TopBar/CompTopBar';
+import { EditorContext } from '../../context/EditorContext';
+import { AuthContext } from '../../context/UserContext';
+import useEditorSockets from '../../sockets/editorSockets';
+import { FiPlus, FiX, FiHome } from 'react-icons/fi';
+import editorApi from '../../api/editorApi';
+
+const EditorPanel = ({
+  tempComp,
+  isTempCompActive,
+
+  sidebarOpen,
+  toggleSidebar,
+
+  activeEditor,
+  userId,
+
+  showPasswordModal,
+  isCurrentEditorAwaitingPassword,
+  passwordInput,
+  setPasswordInput,
+  handlePasswordSubmit,
+  closePasswordModal,
+}) => {
+  const { state: authState } = useContext(AuthContext);
+  const { state: editorState, dispatch: editorDispatch } = useContext(EditorContext);
+  const { emitUpdateEditorContent, emitUpdateEditorMetadata } = useEditorSockets(editorDispatch, authState.dispatch);
+
+  const updateEditorMeta = async (editorName, isPrivate, password) => {
+    emitUpdateEditorMetadata(activeEditor?.editor?.name, "txt", isPrivate, password);
+  }
+
+  const updateEditorCont = async (content) => {
+    emitUpdateEditorContent(activeEditor?.editor?.name, content, authState.token);
+  }
+
+  return (
+    <div className="flex-1 flex flex-col relative overflow-hidden">
+      <CompTopBar
+        compName="editor"
+        toggleSidebar={toggleSidebar}
+        sidebarOpen={sidebarOpen}
+        comp={activeEditor?.editor}
+        updateCompMetaData={(compName, isPrivate, password) => updateEditorMeta(compName, isPrivate, password)}
+      />
+
+      {!activeEditor && !showPasswordModal && !isTempCompActive && (
+        <div className="flex-1 flex flex-col items-center justify-center text-gray-500">No editor selected.</div>
+      )}
+
+      {isTempCompActive && <div className="flex-1 flex flex-col items-center justify-center text-gray-500">Loading...</div>}
+
+
+      {activeEditor && (
+        <div className="flex flex-col flex-1">
+          <TextSpace1 editor={activeEditor?.editor} onTextChange={updateEditorCont}/>
+          {/* <TextSpace editorContent={activeEditor?.editor?.content} onTextChange={updateEditorCont}/> */}
+        </div>
+      )}
+
+      {showPasswordModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-gray-800 p-8 rounded shadow-lg w-80 relative">
+            <button
+              onClick={() => {
+                setPasswordInput('');
+                closePasswordModal();
+              }}
+              className="absolute top-2 right-2 text-gray-400 hover:text-white"
+              aria-label="Close password modal"
+            >
+              <FiX className="text-xl" />
+            </button>
+
+            <h2 className="text-xl font-semibold text-gray-300 mb-4">
+              Enter Editor Password
+            </h2>
+            <input
+              type="password"
+              className="w-full p-3 mb-4 bg-gray-700 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Password"
+              value={passwordInput}
+              onChange={(e) => setPasswordInput(e.target.value)}
+            />
+            <button
+              className="w-full py-3 bg-blue-600 rounded-md text-white font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              onClick={handlePasswordSubmit}
+            >
+              Enter
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const EditorPanel2 = ({ activeEditor, toggleSidebar, sidebarOpen, editor }) => {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [passwordInput, setPasswordInput] = useState('');
   const [isPasswordCorrect, setIsPasswordCorrect] = useState(false);

@@ -16,6 +16,7 @@ import { RoomContext } from './context/RoomContext';
 
 
 import useAuthSockets from './sockets/T_TauthSockets';
+import useRoomSockets6 from './sockets/roomSockets';
 function App2() {
   // Use the new hook for auth-related socket logic
   useAuthSockets();
@@ -37,6 +38,7 @@ function App2() {
 function App() {
   const { state, dispatch } = useContext(AuthContext);
   const { state: roomState, dispatch: roomDispatch } = useContext(RoomContext);
+  const { emitCheckRoom, emitJoinRoom, emitInitialMessages } = useRoomSockets6(roomDispatch, dispatch);
   const socket = useContext(SocketContext);
 
   useEffect(() => {
@@ -54,12 +56,10 @@ function App() {
           // console.log("socket - Authenticated: ", data.token)
           dispatch({ type: 'SET_TOKEN', payload: data.token });
           // console.log("socket - calling getUserAPI");
-          var { isError, message, data, token } = await authApi.getUser(state.token);
+          var { isError, message, data, token } = await authApi.getUser(data.token);
           if (!isError) {
             // console.log("socket - got userDetails: ", data.user?._id);
             var { user, rooms, editors, files, calls } = data;
-            console.log(user.type)
-            console.log(rooms)
             if (user.type == "Immigrant") {
               dispatch({ type: "SET_IMMIGRANT", payload: user })
               roomDispatch({ type: "SET_ROOMS", payload: rooms });
@@ -69,6 +69,14 @@ function App() {
               dispatch({ type: "SET_USER", payload: user });
               roomDispatch({ type: "SET_ROOMS", payload: rooms });
             }
+
+            for (const key in rooms) {
+              if (rooms.hasOwnProperty(key)) {
+              emitJoinRoom(rooms[key].name, data.token, "Initial");
+              }
+            }
+
+            // dispatch({ type: "LOGS", payload: { user, token } })
           }
         }
       });
@@ -79,7 +87,7 @@ function App() {
           // console.log("socket - Re authenticated: ", data.token)
           dispatch({ type: 'SET_TOKEN', payload: data.token });
           // console.log("socket - calling getUserAPI");
-          var { isError, message, data, token } = await authApi.getUser(state.token);
+          var { isError, message, data, token } = await authApi.getUser(data.token);
           if (!isError) {
             // console.log("socket - got userDetails: ", data.user?._id);
             var { user, rooms, editors, files, calls } = data;
@@ -88,6 +96,12 @@ function App() {
               // console.log("socket - setting user after Re authentication");
               dispatch({ type: "SET_USER", payload: user });
               roomDispatch({ type: "SET_ROOMS", payload: rooms });
+            }
+            for (const key in rooms) {
+              if (rooms.hasOwnProperty(key)) {
+                console.log("sending");
+              emitJoinRoom(rooms[key].name, data.token, "Initial");
+              }
             }
           }
         }

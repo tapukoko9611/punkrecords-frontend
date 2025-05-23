@@ -22,17 +22,129 @@
 //   );
 // };
 
-import React, { useContext } from 'react'; // Import useContext
+import React, { useContext } from 'react';
 import { format } from 'date-fns';
-import { AuthContext } from '../../context/UserContext'; // Import AuthContext
+import { AuthContext } from '../../context/UserContext';
+import { FiCornerUpLeft } from 'react-icons/fi';
 
-// NOTE: MessageList needs to pass the entire 'messages' array to MessageItem
-// for the replyTo logic (messages.find(msg => msg.id === message.replyTo)).
-// Or you could pass the repliedToMessage object directly from MessageList
-// if performance is a concern on very long message lists.
-// For now, we assume 'messages' array is passed.
+const MessageItem = ({ 
+  message, 
+  messages, 
+  onSetReply, 
+  onScrollToMessage 
+}) => {
+  const { state: authState } = useContext(AuthContext);
+  const currentUser = authState.user;
+  const isUser = currentUser?._id === message.fromUser;
+  const repliedToMessage = message.replyTo ? messages?.find(msg => msg._id === message.replyTo) : null;
 
-const MessageItem = ({ message, messages, onReplyClick }) => {
+  const handleScrollToReply = (replyId) => {
+    if (onScrollToMessage) {
+      onScrollToMessage(replyId);
+    }
+  };
+
+  const messageDateObj = message.createdAt ? new Date(message.createdAt) : new Date();
+  const messageTime = format(messageDateObj, 'HH:mm');
+  const messageDate = format(messageDateObj, 'dd/MM/yy');
+
+  return (
+    <div
+      // Clicking on the bubble itself will trigger setting reply (if you want the whole item clickable)
+      className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} mb-3 cursor-pointer`}
+      onClick={() => onSetReply && onSetReply(message)}
+    >
+      {repliedToMessage && (
+        <div
+          className={`px-3 py-1 mb-2 rounded-md text-sm ${isUser ? 'bg-blue-500 text-white' : 'bg-gray-600 text-gray-100'}`}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleScrollToReply(repliedToMessage._id);
+          }}
+          title={`Replying to: ${repliedToMessage.body}`}
+        >
+          <span className="italic">
+            Replying to: {repliedToMessage.body.substring(0, 30)}
+            {repliedToMessage.body.length > 30 ? '...' : ''}
+          </span>
+        </div>
+      )}
+
+      <div
+        className={`relative max-w-xs sm:max-w-md px-4 py-2 rounded-lg shadow-md ${
+          isUser ? 'bg-blue-600 text-white rounded-br-none' : 'bg-gray-700 text-gray-100 rounded-bl-none'
+        }`}
+      >
+        <p>{message.body}</p>
+        {/* Reply Icon Button */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation(); // prevent triggering the parent's onClick
+            onSetReply && onSetReply(message);
+          }}
+          className="absolute bottom-1 right-1 text-gray-300 hover:text-gray-100"
+          title="Reply"
+        >
+          <FiCornerUpLeft />
+        </button>
+      </div>
+
+      <div className="flex flex-col text-xs text-gray-400 mt-1">
+        <span>{messageDate} - {messageTime}</span>
+        <span>ID: {message.fromUser}</span>
+      </div>
+    </div>
+  );
+};
+
+const MessageItem3 = ({ message, messages, onReplyClick }) => {
+  const { state: authState } = useContext(AuthContext);
+  const currentUser = authState.user;
+  const isUser = currentUser?._id === message.fromUser;
+  const repliedToMessage = message.replyTo ? messages?.find(msg => msg._id === message.replyTo) : null;
+
+  const handleReplyClick = () => {
+    if (repliedToMessage && onReplyClick) {
+      onReplyClick(repliedToMessage._id);
+    }
+  };
+
+  const messageDateObj = message.createdAt ? new Date(message.createdAt) : new Date();
+  const messageTime = format(messageDateObj, 'HH:mm');
+  const messageDate = format(messageDateObj, 'dd/MM/yy');
+
+  return (
+    <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} mb-3`}>
+      {repliedToMessage && (
+        <div
+          className={`px-3 py-1 mb-2 rounded-md text-sm cursor-pointer ${isUser ? 'bg-blue-500 text-white' : 'bg-gray-600 text-gray-100'}`}
+          onClick={handleReplyClick}
+          title={`Replying to: ${repliedToMessage.body}`}
+        >
+          <span className="italic">
+            Replying to: {repliedToMessage.body.substring(0, 30)}
+            {repliedToMessage.body.length > 30 ? '...' : ''}
+          </span>
+        </div>
+      )}
+
+      <div
+        className={`max-w-xs sm:max-w-md px-4 py-2 rounded-lg shadow-md ${
+          isUser ? 'bg-blue-600 text-white rounded-br-none' : 'bg-gray-700 text-gray-100 rounded-bl-none'
+        }`}
+      >
+        <p>{message.body}</p>
+      </div>
+
+      <div className="flex flex-col text-xs text-gray-400 mt-1">
+        <span>{messageDate} - {messageTime}</span>
+        <span>ID: {message.fromUser}</span>
+      </div>
+    </div>
+  );
+};
+
+const MessageItem2 = ({ message, messages, onReplyClick }) => {
   // Use useContext to get the user state from AuthContext
   const { state: authState } = useContext(AuthContext);
   const currentUser = authState.user; // Get the current user object
@@ -56,7 +168,7 @@ const MessageItem = ({ message, messages, onReplyClick }) => {
 
   // Format date and time
   // Add checks to ensure message.time is a valid date source
-  const messageDateObj = message.time ? new Date(message.time) : new Date(); // Fallback to now if time is missing/invalid
+  const messageDateObj = message.createdAt ? new Date(message.createdAt) : new Date(); // Fallback to now if time is missing/invalid
   const messageTime = format(messageDateObj, 'HH:mm');
   const messageDate = format(messageDateObj, 'dd/MM/yy');
 
@@ -68,9 +180,8 @@ const MessageItem = ({ message, messages, onReplyClick }) => {
       {repliedToMessage && (
         // Clickable div for replying to the parent message
         <div
-          className={`px-3 py-1 mb-1 rounded-md text-sm cursor-pointer ${
-            isUser ? 'bg-blue-400 text-white' : 'bg-gray-600 text-gray-300' // Styling based on who sent the original message
-          }`}
+          className={`px-3 py-1 mb-1 rounded-md text-sm cursor-pointer ${isUser ? 'bg-blue-400 text-white' : 'bg-gray-600 text-gray-300' // Styling based on who sent the original message
+            }`}
           onClick={handleReplyClick}
           title={`Replying to: ${repliedToMessage.body}`} // Add tooltip
         >
@@ -79,10 +190,9 @@ const MessageItem = ({ message, messages, onReplyClick }) => {
       )}
 
       {/* Message bubble */}
-      <div className={`max-w-xs sm:max-w-md px-4 py-2 rounded-lg shadow ${
-          isUser
-            ? 'bg-blue-600 text-white rounded-br-none' // Style for current user's message
-            : 'bg-gray-700 text-gray-100 rounded-bl-none' // Style for other users' messages
+      <div className={`max-w-xs sm:max-w-md px-4 py-2 rounded-lg shadow ${isUser
+          ? 'bg-blue-600 text-white rounded-br-none' // Style for current user's message
+          : 'bg-gray-700 text-gray-100 rounded-bl-none' // Style for other users' messages
         }`}
       >
         {message.body} {/* Display message text */}
@@ -119,18 +229,16 @@ const MessageItem1 = ({ message, messages, onReplyClick }) => {
     <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} mb-2`}>
       {repliedToMessage && (
         <div
-          className={`px-3 py-1 mb-1 rounded-md text-sm cursor-pointer ${
-            isUser ? 'bg-blue-400 text-white' : 'bg-gray-600 text-gray-300'
-          }`}
+          className={`px-3 py-1 mb-1 rounded-md text-sm cursor-pointer ${isUser ? 'bg-blue-400 text-white' : 'bg-gray-600 text-gray-300'
+            }`}
           onClick={handleReplyClick}
         >
           Replying to: <span className="italic">{repliedToMessage.text.substring(0, 20)}{repliedToMessage.text.length > 20 ? '...' : ''}</span>
         </div>
       )}
-      <div className={`max-w-xs sm:max-w-md px-4 py-2 rounded-lg shadow ${
-          isUser
-            ? 'bg-blue-600 text-white rounded-br-none'
-            : 'bg-gray-700 text-gray-100 rounded-bl-none'
+      <div className={`max-w-xs sm:max-w-md px-4 py-2 rounded-lg shadow ${isUser
+          ? 'bg-blue-600 text-white rounded-br-none'
+          : 'bg-gray-700 text-gray-100 rounded-bl-none'
         }`}
       >
         {message.text}

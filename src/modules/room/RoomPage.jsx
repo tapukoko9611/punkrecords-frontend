@@ -6,6 +6,8 @@ import { RoomContext } from '../../context/RoomContext';
 import { AuthContext } from '../../context/UserContext';
 import useRoomSockets from '../../sockets/roomSockets'; // Corrected import to use the hook
 import roomApi from '../../api/roomApi';
+import { useNavigate } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 
 const RoomLayout = () => {
   const { id: roomNameParam } = useParams();
@@ -24,13 +26,15 @@ const RoomLayout = () => {
   const activeRoom = activeRoomId ? allRooms[activeRoomId] : null;
   const tempRoom = roomState.tempRoom;
   const isTempRoomActive = roomState.isTempRoomActive;
+  const navigate = useNavigate();
 
   // Master useEffect to initiate the Room Flow based on URL parameter and Auth State
   useEffect(() => {
     if (roomNameParam && (authState.token && authState.user && authState.user._id)) {
       const token = authState.token;
       // console.log("room - emit check room: ", roomNameParam)
-      emitCheckRoom(roomNameParam, false, "", token);
+      const exists = Object.values(roomState.roomOrder).some(item => item.name === roomNameParam);
+      if (!exists || (exists && activeRoomId==null)) emitCheckRoom(roomNameParam, false, "", token);
     } else { }
   }, [roomNameParam, authState.user, emitCheckRoom])
 
@@ -111,6 +115,8 @@ const RoomLayout = () => {
     // console.log("room - change active? room: ", roomId, ' , ', roomName, ' , ', isSearchResult)
     if (!isSearchResult) {
       setCurrentRoom(roomId);
+      navigate(`/room/${roomName}`, { replace: true });
+      roomDispatch({ type: "MARK_MESSAGES_AS_SEEN", payload: roomId });
     } else if (authState.token && authState.user && authState.user._id) {
       const token = authState.token;
       emitCheckRoom(roomName, false, "", token);
@@ -122,6 +128,7 @@ const RoomLayout = () => {
       <Sidebar
         activeComp={activeRoomId}
         allComps={allRooms}
+        compOrder={roomState.roomOrder}
         setActiveComp={(roomId, roomName, isSearchResult) => changeCurrentRoom(roomId, roomName, isSearchResult)}
         tempComp={tempRoom}
         isTempCompActive={isTempRoomActive}

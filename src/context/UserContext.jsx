@@ -60,6 +60,12 @@ const authReducer = (state, action) => {
       return { ...state, token: action.payload };
     case 'CLEAR_ERROR':
       return { ...state, error: null };
+    case "LOGS":
+      console.log(localStorage.getItem('authToken'));
+      console.log(state.token);
+      console.log(action.payload.token);
+      console.log(state.user._id)
+      return state;
     default:
       return state;
   }

@@ -14,6 +14,7 @@ const Sidebar = ({
   setActiveComp,
   toggleSidebar,
   allComps,
+  compOrder,
   compName,
   sidebarOpen,
   getSearchResult,
@@ -71,6 +72,7 @@ const Sidebar = ({
           setActiveComp(compId, comp_Name, isSearchResult);
         }}
         comps={allComps}
+        compOrder={compOrder}
         searchText={searchText}
         searchResult={searchResult}
         compName={compName}

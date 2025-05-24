@@ -12,19 +12,25 @@ import CallLayout from './modules/call/CallPage';
 import { AuthContext } from "./context/UserContext";
 import { SocketContext } from "./context/SocketContext";
 import authApi from "./api/userApi";
-import { RoomContext } from './context/RoomContext';
 
+import { RoomContext } from './context/RoomContext';
 import useRoomSockets6 from './sockets/roomSockets';
 import { EditorContext } from './context/EditorContext';
 import useEditorSockets from './sockets/editorSockets';
+import { FileContext } from './context/FileContext';
+import useFileSockets from './sockets/fileSockets';
 
 
 function App() {
   const { state, dispatch } = useContext(AuthContext);
   const { state: roomState, dispatch: roomDispatch } = useContext(RoomContext);
   const { state: editorState, dispatch: editorDispatch } = useContext(EditorContext);
+  const { state: fileState, dispatch: fileDispatch } = useContext(FileContext);
+
   const { emitJoinRoom } = useRoomSockets6(roomDispatch, dispatch);
   const { emitJoinEditor } = useEditorSockets(editorDispatch, dispatch);
+  const { emitJoinFile } = useFileSockets(editorDispatch, dispatch);
+
   const socket = useContext(SocketContext);
 
   useEffect(() => {
@@ -52,6 +58,7 @@ function App() {
 
             roomDispatch({ type: "SET_ROOMS", payload: rooms });
             editorDispatch({ type: "SET_EDITORS", payload: editors });
+            fileDispatch({type: "SET_FILES", payload: files});
 
             for (const key in rooms) {
               if (rooms.hasOwnProperty(key)) {
@@ -61,6 +68,11 @@ function App() {
             for (const key in editors) {
               if (editors.hasOwnProperty(key)) {
                 emitJoinEditor(editors[key].name, data.token, "Initial");
+              }
+            }
+            for (const key in files) {
+              if (files.hasOwnProperty(key)) {
+                emitJoinFile(files[key].name, data.token, "Initial");
               }
             }
 
@@ -81,6 +93,7 @@ function App() {
 
             roomDispatch({ type: "SET_ROOMS", payload: rooms });
             editorDispatch({ type: "SET_EDITORS", payload: editors });
+            fileDispatch({type: "SET_FILES", payload: files});
 
             for (const key in rooms) {
               if (rooms.hasOwnProperty(key)) {
@@ -90,6 +103,11 @@ function App() {
             for (const key in editors) {
               if (editors.hasOwnProperty(key)) {
                 emitJoinEditor(editors[key].name, data.token, "Initial");
+              }
+            }
+            for (const key in files) {
+              if (files.hasOwnProperty(key)) {
+                emitJoinFile(files[key].name, data.token, "Initial");
               }
             }
 

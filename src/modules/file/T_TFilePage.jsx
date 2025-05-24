@@ -1,64 +1,70 @@
 import React, { useState } from 'react';
 import Sidebar from '../../components/Sidebar/Sidebar';
-import EditorPanel from "../../components/editor/panel";
+import FilePanel from "../../components/file/panel";
 
-var dummyEditors = {
-  "editor1": {
+var dummyFiles = {
+  "file1": {
     createdBy: "user1",
     createdOn: Date.now(),
     isPrivate: false,
     participants: ["user1", "user2", "user3"],
     password: "",
-    language: "txt",
-    text: "abc\ncsadf\nsdf\nasdf\nsdfgasd",
+    type: "txt",
+    name: "file1.txt",
+    downloads: 10,
+    size: 10
   },
-  "editor2": {
+  "file2": {
     createdBy: "user2",
     createdOn: Date.now(),
     isPrivate: true,
     participants: ["user1", "user2", "user3"],
-    password: "editor2",
-    language: "txt",
-    text: "def\nsadfilusyadfasdfkuasl erlaskhdfvl kashldfas kljhfljksahf lsakjhfl iashf",
+    password: "file2",
+    type: "jpg",
+    name: "file2.jpg",
+    downloads: 0,
+    size: 4
   },
-  "editor3": {
+  "file3": {
     createdBy: "user3",
     createdOn: Date.now(),
     isPrivate: false,
     participants: ["user1", "user3"],
     password: "",
-    language: "txt",
-    text: "ghi",
+    type: "txt",
+    name: "",
+    downloads: 0,
+    size: 0
   },
 };
 
-const EditorLayout = () => {
-  const [activeEditor, setActiveEditor] = useState("");
+const FileLayout = () => {
+  const [activeFile, setActiveFile] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [allEditors, setAllEditors] = useState(dummyEditors);
+  const [allFiles, setAllFiles] = useState(dummyFiles);
 
   return (
     <div className="flex h-screen w-full bg-gray-900 text-white overflow-hidden">
       {/* Left Sidebar */}
       {sidebarOpen && (
         <Sidebar
-          activeComp={activeEditor}
-          setActiveComp={(editorName) => { console.log(editorName); return setActiveEditor(editorName) }}
+          activeComp={activeFile}
+          setActiveComp={(fileName) => {setActiveFile(fileName)}}
           toggleSidebar={() => setSidebarOpen(!sidebarOpen)}
-          allComps={allEditors}
-          compName="editor"
+          allComps={allFiles}
+          compName="file"
         />
       )}
 
-      {/* Right Editor Panel */}
-      <EditorPanel
-        activeEditor={activeEditor}
+      {/* Right File Panel */}
+      <FilePanel
+        activeFile={activeFile}
         sidebarOpen={sidebarOpen}
         toggleSidebar={() => setSidebarOpen(!sidebarOpen)}
-        editor={(activeEditor.length == 0) ? null : allEditors[activeEditor]}
+        file={(activeFile.length==0)? null: allFiles[activeFile]}
       />
     </div>
   );
 };
 
-export default EditorLayout;
+export default FileLayout;

@@ -4,6 +4,7 @@ import CompList from './CompList';
 import { FiPlus, FiX, FiHome } from 'react-icons/fi';
 import roomApi from '../../api/roomApi';
 import AddCompModal from './AddCompModal';
+import { useNavigate } from 'react-router-dom';
 
 const Sidebar = ({
   activeComp,
@@ -21,6 +22,7 @@ const Sidebar = ({
   const [searchText, setSearchText] = useState("");
   const [searchResult, setSearchResult] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const navigate = useNavigate();
 
   return (
     <div className={`
@@ -34,7 +36,9 @@ const Sidebar = ({
         <button onClick={toggleSidebar} aria-label="Close sidebar">
           <FiX className="text-xl text-gray-400 hover:text-white transition" />
         </button>
-        <button onClick={() => { /* TODO: navigation to home/dashboard */ }} aria-label="Go to home">
+        <button onClick={() => {
+          navigate(`/`, { replace: true });
+        }} aria-label="Go to home">
           <FiHome className="text-xl text-gray-400 hover:text-white transition" />
         </button>
         <FiPlus

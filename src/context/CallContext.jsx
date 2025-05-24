@@ -1,90 +1,216 @@
-// src/contexts/call/CallContext.js
-import React, { createContext, useReducer, useContext, useCallback } from 'react';
-
+import React, { createContext, useReducer, useCallback } from 'react';
 
 const initialStateCall = {
-    calls: {},
+    calls: {},         // { callId: { call: <callData>, seenMessages: [], unseenMessages: [] } }
+    callOrder: {},     // map callId -> {callName, notifications, order}
     currentCallId: null,
+    tempCall: null,
+    isTempCallActive: false,
     isLoading: false,
     error: null,
 };
 
 const callReducer = (state, action) => {
     switch (action.type) {
-        case 'SET_CALLS':
-            return { ...state, calls: action.payload, isLoading: false, error: null };
+
+        case 'SET_CALLS': {
+            const receivedCalls = action.payload;
+            const normalizedCalls = {};
+            for (const callId in receivedCalls) {
+                if (receivedCalls.hasOwnProperty(callId)) {
+                    const callDetails = receivedCalls[callId];
+                    normalizedCalls[callId] = {
+                        call: callDetails,
+                    };
+                }
+            }
+            
+            const callOrder = {};
+            for (const callId in normalizedCalls) {
+                if (normalizedCalls.hasOwnProperty(callId)) {
+                    const callName = normalizedCalls[callId].call.name;
+                    callOrder[callId] = {
+                        name: callName,
+                        notifications: 0,
+                        order: Date.now()
+                    };
+                }
+            }
+            return { ...state, calls: normalizedCalls, callOrder, isLoading: false, error: null };
+        }
+
         case 'SET_CURRENT_CALL':
-            return { ...state, currentCallId: action.payload, isLoading: false, error: null };
-        case 'ADD_CALL':
+            return { ...state, currentCallId: action.payload, isLoading: false, callOrder: { ...state.callOrder, [action.payload]: { ...state.callOrder[action.payload], notifications: 0 } }, error: null };
+
+        case 'ADD_CALL': {
+            
+            const callData = action.payload.call;
+
+            if (!callData || !callData._id) {
+                console.error("ADD_CALL: Invalid call data in payload", action.payload.call);
+                return state;
+            }
+
+            const updatedOrder = { ...state.callOrder };
+            const callId = callData._id;
+
+            if (updatedOrder[callId]) {
+                updatedOrder[callId] = {
+                    ...updatedOrder[callId],
+                    notifications: updatedOrder[callId].notifications,
+                    order: Date.now()
+                };
+            } else {
+                
+                const callName = (state.calls[callId].call && state.calls[callId].call.name) || 'Call';
+                updatedOrder[callId] = {
+                    name: callName,
+                    notifications: 0,
+                    order: Date.now()
+                };
+            }
+
+
+
             return {
                 ...state,
                 calls: {
                     ...state.calls,
-                    [action.payload.call._id]: {
-                        ...action.payload.call,
-                        newUpdates: 0,
-                        participants: {}, // To store individual participant info (streams, etc.)
-                    },
+                    [callData._id]: {
+                        call: callData,
+                    }
                 },
-                isLoading: false,
+                callOrder: updatedOrder,
                 error: null,
             };
-        case 'INCREMENT_NEW_UPDATES':
-            if (!state.calls[action.payload]) return state;
+        }
+
+        case 'SET_TEMP_CALL': {
+            
+            const callData = action.payload.call;
+
+            if (!callData || !callData._id) {
+                console.error("ADD_CALL: Invalid call data in payload", action.payload.call);
+                return state;
+            }
+
+            return {
+                ...state,
+                tempCall: callData,
+                isTempCallActive: true,
+                error: null,
+            };
+        }
+
+        case 'CLEAR_TEMP_CALL': {
+
+            return {
+                ...state,
+                tempCall: null,
+                isTempCallActive: false,
+                error: null,
+            };
+        }
+
+        case 'SWAP_TEMP_CALL': {
+            
+            const callData = state.tempCall;
+
+            if (!callData || !callData._id) {
+                console.error("ADD_CALL: Invalid call data in payload", state.tempCall);
+                return state;
+            }
+
+            const callId = callData._id;
+            const updatedOrder = { ...state.callOrder };
+
+            if (updatedOrder[callId]) {
+                updatedOrder[callId] = {
+                    ...updatedOrder[callId],
+                    notifications: 0,
+                    order: Date.now() 
+                };
+            } else {
+                
+                const callName = callData.name;
+                updatedOrder[callId] = {
+                    name: callName,
+                    notifications: 0,
+                    order: Date.now()
+                };
+            }
+
+
+
+            return {
+                ...state,
+                tempCall: null,
+                isTempCallActive: false,
+                currentCallId: callData._id,
+                calls: {
+                    ...state.calls,
+                    [callData._id]: {
+                        call: callData,
+                    }
+                },
+                callOrder: updatedOrder,
+                error: null,
+            };
+        }
+
+        case 'SET_UPDATED_CALL': {
+            
+            const callData = action.payload.call;
+
+            if (!callData || !callData._id) {
+                console.error("SET_UPDATED_CALL: Invalid call data in payload", state.tempCall);
+                return state;
+            }
+
+            const callId = callData._id;
+            const updatedOrder = { ...state.callOrder };
+
+            if (updatedOrder[callId]) {
+                updatedOrder[callId] = {
+                    ...updatedOrder[callId],
+                    notifications: state.currentCallId === callId ? 0 : updatedOrder[callId].notifications + 1,
+                    order: Date.now()
+                };
+            } else {
+                const callName = (state.calls[callId].call && state.calls[callId].call.name) || 'Call';
+                updatedOrder[callId] = {
+                    name: callName,
+                    notifications: state.currentCallId === callId ? 0 : 1,
+                    order: Date.now()
+                };
+            }
+
             return {
                 ...state,
                 calls: {
                     ...state.calls,
-                    [action.payload]: {
-                        ...state.calls[action.payload],
-                        newUpdates: (state.calls[action.payload]?.newUpdates || 0) + 1,
-                    },
+                    [callData._id]: {
+                        call: callData,
+                    }
                 },
+                callOrder: updatedOrder,
+                error: null,
             };
-        case 'RESET_NEW_UPDATES':
-            if (!state.calls[action.payload]) return state;
-            return {
-                ...state,
-                calls: {
-                    ...state.calls,
-                    [action.payload]: {
-                        ...state.calls[action.payload],
-                        newUpdates: 0,
-                    },
-                },
-            };
-        case 'ADD_PARTICIPANT':
-            if (!state.calls[action.payload.callId]) return state;
-            return {
-                ...state,
-                calls: {
-                    ...state.calls,
-                    [action.payload.callId]: {
-                        ...state.calls[action.payload.callId],
-                        participants: {
-                            ...state.calls[action.payload.callId].participants,
-                            [action.payload.userId]: action.payload.participantInfo,
-                        },
-                    },
-                },
-            };
-        case 'REMOVE_PARTICIPANT':
-            if (!state.calls[action.payload.callId] || !state.calls[action.payload.callId].participants[action.payload.userId]) return state;
-            const { [action.payload.userId]: removedParticipant, ...restParticipants } = state.calls[action.payload.callId].participants;
-            return {
-                ...state,
-                calls: {
-                    ...state.calls,
-                    [action.payload.callId]: {
-                        ...state.calls[action.payload.callId],
-                        participants: restParticipants,
-                    },
-                },
-            };
-        case 'CALL_LOADING':
-            return { ...state, isLoading: true, error: null };
+        }
+
+        case 'MARK_CONTENT_AS_SEEN': {
+            
+            const callIdToMark = action.payload;
+            if (!state.calls[callIdToMark]) return state;
+            return { ...state, callOrder: { ...state.callOrder, [callIdToMark]: { ...state.callOrder[callIdToMark], notifications: 0 } } };
+        }
+
         case 'CALL_ERROR':
             return { ...state, isLoading: false, error: action.payload };
+
+        case 'CALL_LOADING':
+            return { ...state, isLoading: true, error: null };
+
         default:
             return state;
     }
@@ -93,6 +219,10 @@ const callReducer = (state, action) => {
 const CallContext = createContext({
     state: initialStateCall,
     dispatch: () => { },
+    setCurrentCall: () => { },
+    markContentAsSeen: () => { },
+    setCalls: () => { },
+    addCall: () => { },
 });
 
 const CallProvider = ({ children }) => {
@@ -100,34 +230,22 @@ const CallProvider = ({ children }) => {
 
     const setCurrentCall = useCallback((callId) => {
         dispatch({ type: 'SET_CURRENT_CALL', payload: callId });
-    }, []);
+    }, [dispatch]);
 
-    const incrementNewUpdates = useCallback((callId) => {
-        dispatch({ type: 'INCREMENT_NEW_UPDATES', payload: callId });
-    }, []);
-
-    const resetNewUpdates = useCallback((callId) => {
-        dispatch({ type: 'RESET_NEW_UPDATES', payload: callId });
-    }, []);
+    const markContentAsSeen = useCallback((callId) => {
+        dispatch({ type: 'MARK_CONTENT_AS_SEEN', payload: callId });
+    }, [dispatch]);
 
     const setCalls = useCallback((calls) => {
         dispatch({ type: 'SET_CALLS', payload: calls });
-    }, []);
+    }, [dispatch]);
 
     const addCall = useCallback((call) => {
         dispatch({ type: 'ADD_CALL', payload: { call } });
-    }, []);
-
-    const addParticipant = useCallback((callId, userId, participantInfo) => {
-        dispatch({ type: 'ADD_PARTICIPANT', payload: { callId, userId, participantInfo } });
-    }, []);
-
-    const removeParticipant = useCallback((callId, userId) => {
-        dispatch({ type: 'REMOVE_PARTICIPANT', payload: { callId, userId } });
-    }, []);
+    }, [dispatch]);
 
     return (
-        <CallContext.Provider value={{ state, dispatch, setCurrentCall, incrementNewUpdates, resetNewUpdates, setCalls, addCall, addParticipant, removeParticipant }}>
+        <CallContext.Provider value={{ state, dispatch, setCurrentCall, markContentAsSeen, setCalls, addCall }}>
             {children}
         </CallContext.Provider>
     );

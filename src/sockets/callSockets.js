@@ -1,68 +1,126 @@
-import { socket } from '../App';
+import { useCallback, useEffect, useContext, useRef } from 'react';
+import { SocketContext } from '../context/SocketContext';
 
-import { useCallback, useEffect } from 'react';
+// Global flag – it will persist across hook instances.
+let callListenersInitialized = false;
 
-const callSockets = (dispatch) => {
-    const emitCheckCall = useCallback((callName, token) => {
-        socket.emit('call:check', { callName, token });
-    }, []);
+const useCallSockets = (dispatch, authDispatch) => {
+    const socket = useContext(SocketContext);
 
-    const onCallChecked = useCallback(() => {
-        socket.on('call:checked', (result) => {
-            if (!result.isError) {
-                dispatch({ type: 'ADD_CALL', payload: { call: result.data.call } });
-            } else {
-                dispatch({ type: 'CALL_ERROR', payload: result.message });
-            }
-        });
-    }, [dispatch]);
-
-    const emitJoinCall = useCallback((callName, token) => {
-        socket.emit('call:join', { callName, token });
-    }, []);
-
-    const onCallJoined = useCallback(() => {
-        socket.on('call:joined', (result) => {
-            if (!result.isError) {
-                dispatch({ type: 'SET_CURRENT_CALL', payload: result.data.call._id });
-            } else {
-                dispatch({ type: 'CALL_ERROR', payload: result.message });
-            }
-        });
-    }, [dispatch]);
-
-    const onUserJoinedCall = useCallback(() => {
-        socket.on('user:joined', (data) => {
-            dispatch({ type: 'INCREMENT_NEW_UPDATES', payload: data.callId }); // callId is included in data
-            dispatch({ type: 'ADD_PARTICIPANT', payload: { callId: data.callId, userId: data.userId, participantInfo: data.participantInfo } }); // Include participantInfo
-        });
-    }, [dispatch]);
-
-    const onUserLeftCall = useCallback(() => {
-        socket.on('user:left', (data) => {
-            dispatch({ type: 'INCREMENT_NEW_UPDATES', payload: data.callId });
-            dispatch({ type: 'REMOVE_PARTICIPANT', payload: { callId: data.callId, userId: data.userId } });
-        });
-    }, [dispatch]);
-
-    const setupCallSockets = useCallback(() => {
-        onCallChecked();
-        onCallJoined();
-        onUserJoinedCall();
-        onUserLeftCall();
-    }, [onCallChecked, onCallJoined, onUserJoinedCall, onUserLeftCall]);
+    const removeListeners = useCallback(() => {
+        if (socket) {
+            socket.off('call:searched');
+            socket.off('call:joined');
+            socket.off('call:content:got');
+            socket.off('call:content:updated');
+            socket.off('call:metadata:updated');
+            socket.off('call:error');
+        }
+    }, [socket]);
 
     useEffect(() => {
-        setupCallSockets();
-        return () => {
-            socket.off('call:checked');
-            socket.off('call:joined');
-            socket.off('user:joined');
-            socket.off('user:left');
-        };
-    }, [setupCallSockets]);
+        if (!socket) return;
+        if (!callListenersInitialized) {
+            removeListeners();
+            socket.on('call:searched', (result) => {
+                if (!result.isError) {
+                    dispatch({ type: 'SET_TEMP_CALL', payload: { call: result.data.call } });
+                } else {
+                    dispatch({ type: 'CALL_ERROR', payload: result.message });
+                }
+            });
 
-    return { emitCheckCall, emitJoinCall };
+            socket.on('call:joined', (result) => {
+                if (!result.isError) {
+                    if (result.type != "Initial") dispatch({ type: 'SWAP_TEMP_CALL', payload: { call: result.data.call } });
+                } else {
+                    dispatch({ type: 'CALL_ERROR', payload: result.message });
+                }
+            });
+
+            socket.on('call:content:got', (result) => {
+                if (!result.isError) {
+                    dispatch({ type: 'SET_UPDATED_CALL', payload: { call: result.data.call } });
+                } else {
+                    dispatch({ type: 'CALL_ERROR', payload: result.message });
+                }
+            });
+
+            socket.on('call:content:updated', (result) => {
+                if (!result.isError) {
+                    dispatch({ type: 'SET_UPDATED_CALL', payload: { call: result.data.call } });
+                } else {
+                    dispatch({ type: 'CALL_ERROR', payload: result.message });
+                }
+            });
+
+            socket.on('call:metadata:updated', (result) => {
+                if (!result.isError) {
+                    dispatch({ type: 'SET_UPDATED_CALL', payload: { call: result.data.call } });
+                    alert("call updated");
+                } else {
+                    dispatch({ type: 'CALL_ERROR', payload: result.message });
+                }
+            });
+
+            socket.on('call:error', (error) => {
+                console.error("Call Socket Error:", error.message);
+                dispatch({ type: 'CALL_ERROR', payload: error.message });
+            });
+
+            callListenersInitialized = true;
+        }
+
+        return () => {};
+    }, [socket, dispatch, removeListeners]);
+
+    const emitCheckCall = useCallback((callName, privacy = false, password = "", token) => {
+        if (socket && socket.connected) {
+            socket.emit('call:search', { callName, privacy, password, token });
+        } else {
+            console.warn("Socket not connected, cannot emit 'call:search'.");
+        }
+    }, [socket]);
+
+    const emitJoinCall = useCallback((callName, token, type = "No") => {
+        if (socket && socket.connected) {
+            socket.emit('call:join', { callName, type, token, type });
+        } else {
+            console.warn("Socket not connected, cannot emit 'call:join'.");
+        }
+    }, [socket]);
+
+    const emitCallGet = useCallback((callId, token) => {
+        if (socket && socket.connected) {
+            socket.emit('call:content:get', { callId, token });
+        } else {
+            console.warn("Socket not connected, cannot emit 'call:messages:initial'.");
+        }
+    }, [socket]);
+
+    const emitUpdateCallContent = useCallback((callName, text, token) => {
+        if (socket && socket.connected) {
+            socket.emit('call:content:update', { callName, text, token });
+        } else {
+            console.warn("Socket not connected, cannot emit 'call:message:send'.");
+        }
+    }, [socket]);
+
+    const emitUpdateCallMetadata = useCallback((callName, privacy = false, password = "") => {
+        if (socket && socket.connected) {
+            socket.emit('call:metadata:update', { callName, privacy, password });
+        } else {
+            console.warn("Socket not connected, cannot emit 'call:search'.");
+        }
+    }, [socket]);
+
+    return {
+        emitCheckCall,
+        emitJoinCall,
+        emitCallGet,
+        emitUpdateCallContent,
+        emitUpdateCallMetadata
+    };
 };
 
-export default callSockets;
+export default useCallSockets;

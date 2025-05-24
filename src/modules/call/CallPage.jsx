@@ -1,260 +1,166 @@
-import React, { useState, useEffect, useRef } from 'react';
-import io from 'socket.io-client';
+import React, { useState, useEffect, useContext } from 'react';
+import { useParams } from 'react-router-dom';
+import Sidebar from '../../components/Sidebar/Sidebar';
+import CallPanel from "../../components/call/panel";
+import { CallContext } from '../../context/CallContext';
+import { AuthContext } from '../../context/UserContext';
+import useCallSockets from '../../sockets/callSockets';
+import callApi from '../../api/callApi';
+import { useNavigate } from 'react-router-dom';
 
 const CallLayout = () => {
-    const [localStream, setLocalStream] = useState(null);
-  const [remoteStreams, setRemoteStreams] = useState({});
-  const [isAudioEnabled, setIsAudioEnabled] = useState(true);
-  const [isVideoEnabled, setIsVideoEnabled] = useState(true);
-  const localVideoRef = useRef(null);
-  const socket = useRef(null);
-  const peerConnections = useRef({});
-  const [usersList, setUsersList] = useState([]);
+  const { id: callNameParam } = useParams();
+  const { state: callState, dispatch: callDispatch, setCurrentCall, } = useContext(CallContext);
+  const { state: authState } = useContext(AuthContext);
 
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [privateCallPassword, setPrivateCallPassword] = useState('');
+  const [currentCallAwaitingPassword, setCurrentCallAwaitingPassword] = useState(null);
+
+  const { emitCheckCall, emitJoinCall, } = useCallSockets(callDispatch, authState.dispatch);
+
+  const allCalls = callState.calls;
+  const activeCallId = callState.currentCallId;
+  const activeCall = activeCallId ? allCalls[activeCallId] : null;
+  const tempCall = callState.tempCall;
+  const isTempCallActive = callState.isTempCallActive;
+  const navigate = useNavigate();
+
+  // Master useEffect to initiate the Call Flow based on URL parameter and Auth State
   useEffect(() => {
-    socket.current = io('http://localhost:5000');
+    if (callNameParam && (authState.token && authState.user && authState.user._id)) {
+      const token = authState.token;
+      const exists = Object.values(callState.callOrder).some(item => item.name === callNameParam);
+      if (!exists || (exists && activeCallId==null)) emitCheckCall(callNameParam, false, "", token);
+    } else { }
+  }, [callNameParam, authState.user, emitCheckCall])
 
-    const getLocalMedia = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
-        setLocalStream(stream);
-        if (localVideoRef.current) localVideoRef.current.srcObject = stream;
-        console.log('Local media stream obtained:', stream);
-      } catch (error) {
-        console.error('Error accessing media:', error);
+  // useEffect to trigger call:join after reciveing searched and the tempCall is set
+  useEffect(() => {
+    // if temp call (when call is searched and returned but the join isnt triggered yet) -> triggers join if not private
+    if (tempCall && isTempCallActive && authState.user && authState.user._id) {
+
+      const isParticipant = tempCall.participants && tempCall.participants[authState.user._id];
+
+      if (tempCall.isPrivate && !isParticipant) {
+        setCurrentCallAwaitingPassword(tempCall);
+        setShowPasswordModal(true);
+        return
       }
-    };
 
-    getLocalMedia();
+      emitJoinCall(tempCall.name, authState.token, privateCallPassword);
 
-    socket.current.on('connect', () => {
-      console.log('Connected to signaling server:', socket.current.id);
-      socket.current.emit('join-call');
-      console.log('Emitted join-call');
-    });
+      setPrivateCallPassword('');
+      setCurrentCallAwaitingPassword(null);
 
-    socket.current.on('all-users', (users) => {
-      console.log('Received all-users:', users);
-      setUsersList(users);
-    });
-
-    socket.current.on('ice-candidate', (payload) => {
-      console.log('Received ICE candidate from:', payload.userId, 'Candidate:', payload.candidate);
-      addIceCandidate(payload.userId, payload.candidate);
-    });
-
-    socket.current.on('user-disconnected', (userId) => {
-      console.log('User disconnected:', userId);
-      removeRemoteStream(userId);
-    });
-
-    return () => {
-      if (localStream) localStream.getTracks().forEach((track) => track.stop());
-      if (socket.current) socket.current.disconnect();
-    };
-  }, []);
-
-  useEffect(() => {
-    if (localStream && socket.current) {
-      console.log('Local stream is ready, processing user list:', usersList);
-      usersList.forEach((userId) => {
-        console.log('Processing user (after localStream):', userId, 'My ID:', socket.current.id, 'Connection exists:', !!peerConnections.current[userId]);
-        if (userId !== socket.current.id && !peerConnections.current[userId]) {
-          console.log('Creating offer (after localStream) for:', userId);
-          createOffer(userId);
-        }
-      });
-
-      socket.current.on('offer', async (payload) => {
-        console.log('Received offer (after localStream) from:', payload.userId, 'Offer:', payload.offer);
-        if (!peerConnections.current[payload.userId]) {
-          console.log('Creating answer (after localStream) for:', payload.userId);
-          await createAnswer(payload.userId, payload.offer);
-        } else {
-          console.log('Peer connection already exists (after localStream) for:', payload.userId);
-        }
-      });
-
-      // We might still need to re-emit join-call just in case we connected very late
-      socket.current.emit('join-call');
     }
-  }, [localStream, socket.current, usersList]);
+    // if not tempCall and has activeCall (when joined, and messages are empty) -> i dont think its responislbe for anything
+    else if (!(tempCall || isTempCallActive) && (activeCall && activeCall._id) && (authState.user && authState.user._id)) { }
+  }, [tempCall, isTempCallActive, emitJoinCall, privateCallPassword]);
 
-    const createOffer = async (remoteSocketId) => {
-        console.log('createOffer initiated for:', remoteSocketId);
-        peerConnections.current[remoteSocketId] = new RTCPeerConnection({
-            iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
-        });
+  // Effect to show the password modal based on activeCall details and user participation
+  useEffect(() => {
+    if (tempCall && tempCall.isPrivate && authState.user?._id) {
+      const isParticipant = tempCall.participants && tempCall.participants[authState.user._id];
 
-        localStream.getTracks().forEach((track) => {
-            peerConnections.current[remoteSocketId].addTrack(track, localStream);
-            console.log('Added local track:', track.kind);
-        });
+      if (!isParticipant && !showPasswordModal) { // Only set to true if not already true
+        setCurrentCallAwaitingPassword(activeCall);
+        setShowPasswordModal(true);
+      } else if (isParticipant && showPasswordModal) { // Hide if user becomes participant and modal is shown
+        setShowPasswordModal(false);
+        setCurrentCallAwaitingPassword(null);
+        setPrivateCallPassword('');
+      }
+    } else if (showPasswordModal) { // Hide if call is no longer private or no active call
+      setShowPasswordModal(false);
+      setPrivateCallPassword('');
+    }
+  }, [tempCall, authState.user, showPasswordModal]);
 
-        peerConnections.current[remoteSocketId].onicecandidate = (event) => {
-            if (event.candidate) {
-                console.log('ICE candidate generated:', event.candidate);
-                socket.current.emit('ice-candidate', { target: remoteSocketId, candidate: event.candidate });
-                console.log('Emitted ICE candidate to:', remoteSocketId);
-            }
-        };
 
-        peerConnections.current[remoteSocketId].ontrack = (event) => {
-            if (event.streams && event.streams[0]) {
-                console.log('Remote track received:', event.track.kind, 'Stream ID:', event.streams[0].id);
-                setRemoteStreams((prevStreams) => ({ ...prevStreams, [remoteSocketId]: event.streams[0] }));
-            }
-        };
+  const handlePasswordSubmit = () => {
+    if (currentCallAwaitingPassword && privateCallPassword && tempCall && isTempCallActive) {
+      if (privateCallPassword === tempCall.password) {
+        emitJoinCall(currentCallAwaitingPassword.name, authState.token, privateCallPassword);
+        setPrivateCallPassword('');
+        setCurrentCallAwaitingPassword(null);
+      } else {
+        alert("Please enter a valid password");
+      }
+    } else {
+      alert("Please enter a password.");
+    }
+  };
 
-        try {
-            const offer = await peerConnections.current[remoteSocketId].createOffer();
-            console.log('Offer created:', offer);
-            await peerConnections.current[remoteSocketId].setLocalDescription(offer);
-            console.log('Local description set as offer:', offer);
-            socket.current.emit('offer', { target: remoteSocketId, offer: offer });
-            console.log('Emitted offer to:', remoteSocketId);
-        } catch (error) {
-            console.error('Error creating or sending offer:', error);
-        }
-    };
+  const closePasswordModal = () => {
+    callDispatch({ type: 'CLEAR_TEMP_CALL', payload: "" });
+    setPrivateCallPassword('');
+    setCurrentCallAwaitingPassword(null);
+  }
 
-    const createAnswer = async (remoteSocketId, offer) => {
-        console.log('createAnswer initiated for:', remoteSocketId, 'Offer:', offer);
-        peerConnections.current[remoteSocketId] = new RTCPeerConnection({
-            iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
-        });
+  const checkCallExists = async (text) => {
+    return (await callApi.checkCallName("", text));
+  };
 
-        const bufferedCandidates = [];
+  const createCustomCall = (callName, privacy = false, password = "") => {
+    emitCheckCall(callName, privacy, password, authState.token);
+    setTimeout(() => {
+      navigate(`/call/${callName}`, { replace: true });
+    }, 1000);
+  }
 
-        peerConnections.current[remoteSocketId].onicecandidate = (event) => {
-            if (event.candidate) {
-                console.log('ICE candidate (answerer) generated:', event.candidate);
-                socket.current.emit('ice-candidate', { target: remoteSocketId, candidate: event.candidate });
-                console.log('Emitted ICE candidate (answerer) to:', remoteSocketId);
-            }
-        };
+  const changeCurrentCall = (callId, callName, isSearchResult) => {
+    if (!isSearchResult) {
+      setCurrentCall(callId);
+      navigate(`/call/${callName}`, { replace: true });
+      callDispatch({ type: "MARK_CONTENT_AS_SEEN", payload: callId });
+    } else if (authState.token && authState.user && authState.user._id) {
+      const token = authState.token;
+      emitCheckCall(callName, false, "", token);
+      setTimeout(() => {
+      navigate(`/call/${callName}`, { replace: true });
+    }, 1000);
+    }
+  }
 
-        peerConnections.current[remoteSocketId].ontrack = (event) => {
-            if (event.streams && event.streams[0]) {
-                console.log('Remote track received (answerer):', event.track.kind, 'Stream ID:', event.streams[0].id);
-                setRemoteStreams((prevStreams) => ({ ...prevStreams, [remoteSocketId]: event.streams[0] }));
-            }
-        };
+  return (
+    <div className="flex flex-row h-screen w-full bg-gray-900 text-white overflow-hidden">
+      <Sidebar
+        activeComp={activeCallId}
+        allComps={allCalls}
+        compOrder={callState.callOrder}
+        setActiveComp={(callId, callName, isSearchResult) => changeCurrentCall(callId, callName, isSearchResult)}
+        tempComp={tempCall}
+        isTempCompActive={isTempCallActive}
+        toggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+        sidebarOpen={sidebarOpen}
+        compName="call"
+        getSearchResult={checkCallExists}
+        createComp={createCustomCall}
+      />
 
-        try {
-            await peerConnections.current[remoteSocketId].setRemoteDescription(new RTCSessionDescription(offer));
-            console.log('Remote description set (answerer):', offer);
+      <div className="flex-grow flex flex-col overflow-hidden">
+        <CallPanel
+          tempCom={tempCall}
+          isTempCompActive={isTempCallActive}
 
-            // Process buffered candidates
-            bufferedCandidates.forEach(candidate => {
-                try {
-                    peerConnections.current[remoteSocketId].addIceCandidate(candidate);
-                    console.log('Buffered ICE candidate added (answerer):', candidate);
-                } catch (error) {
-                    console.error('Error adding buffered ICE candidate (answerer):', error);
-                }
-            });
-            bufferedCandidates.length = 0; // Clear the buffer
+          sidebarOpen={sidebarOpen}
+          toggleSidebar={() => setSidebarOpen(!sidebarOpen)}
 
-            const answer = await peerConnections.current[remoteSocketId].createAnswer();
-            console.log('Answer created:', answer);
-            await peerConnections.current[remoteSocketId].setLocalDescription(answer);
-            console.log('Local description set as answer:', answer);
-            socket.current.emit('answer', { target: remoteSocketId, answer: answer });
-            console.log('Emitted answer to:', remoteSocketId);
-        } catch (error) {
-            console.error('Error creating or sending answer:', error);
-        }
+          activeCall={activeCall}
+          userId={authState.user?._id}
 
-        socket.current.on('ice-candidate', (payload) => {
-            if (payload.userId === remoteSocketId && peerConnections.current[remoteSocketId] && peerConnections.current[remoteSocketId].remoteDescription) {
-                try {
-                    peerConnections.current[remoteSocketId].addIceCandidate(new RTCIceCandidate(payload.candidate));
-                    console.log('ICE candidate received and added (answerer):', payload.candidate);
-                } catch (error) {
-                    console.error('Error adding received ICE candidate (answerer):', error);
-                }
-            } else if (payload.userId === remoteSocketId) {
-                console.log('ICE candidate received but remote description not set yet (answerer), buffering:', payload.candidate);
-                bufferedCandidates.push(new RTCIceCandidate(payload.candidate));
-            }
-        });
-    };
-
-    const setRemoteAnswer = async (remoteSocketId, answer) => {
-        console.log('setRemoteAnswer called for:', remoteSocketId, 'Answer:', answer);
-        if (peerConnections.current[remoteSocketId]) {
-            try {
-                await peerConnections.current[remoteSocketId].setRemoteDescription(new RTCSessionDescription(answer));
-                console.log('Remote description set (offerer):', answer);
-            } catch (error) {
-                console.error('Error setting remote description (offerer):', error);
-            }
-        }
-    };
-
-    const addIceCandidate = async (remoteSocketId, candidate) => {
-        console.log('addIceCandidate called for:', remoteSocketId, 'Candidate:', candidate);
-        if (peerConnections.current[remoteSocketId]) {
-            try {
-                await peerConnections.current[remoteSocketId].addIceCandidate(new RTCIceCandidate(candidate));
-                console.log('ICE candidate added:', candidate);
-            } catch (error) {
-                console.error('Error adding ICE candidate:', error);
-            }
-        }
-    };
-
-    const removeRemoteStream = (socketId) => {
-        console.log('removeRemoteStream called for:', socketId);
-        setRemoteStreams((prevStreams) => {
-            const newStreams = { ...prevStreams };
-            delete newStreams[socketId];
-            return newStreams;
-        });
-        if (peerConnections.current[socketId]) {
-            peerConnections.current[socketId].close();
-            delete peerConnections.current[socketId];
-        }
-    };
-
-    const toggleAudio = () => {
-        setIsAudioEnabled((prevState) => {
-            const enabled = !prevState;
-            if (localStream) localStream.getAudioTracks().forEach((track) => (track.enabled = enabled));
-            return enabled;
-        });
-    };
-
-    const toggleVideo = () => {
-        setIsVideoEnabled((prevState) => {
-            const enabled = !prevState;
-            if (localStream) localStream.getVideoTracks().forEach((track) => (track.enabled = enabled));
-            return enabled;
-        });
-    };
-
-    return (
-        <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-4">
-            <h1 className="text-2xl font-bold mb-4">WebRTC Call Room</h1>
-            <div className="mb-4">
-                <video ref={localVideoRef} autoPlay muted className="w-48 h-48 rounded-md shadow-md object-cover" />
-                <p className="text-sm text-gray-500 mt-1">Your Video</p>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-4">
-                {Object.entries(remoteStreams).map(([socketId, stream]) => (
-                    <div key={socketId}>
-                        <video srcObject={stream} autoPlay className="w-48 h-48 rounded-md shadow-md object-cover" />
-                        <p className="text-sm text-gray-500 mt-1">Peer: {socketId}</p>
-                    </div>
-                ))}
-            </div>
-            <div className="flex space-x-4">
-                <button onClick={toggleAudio} className={`px-4 py-2 rounded-md ${isAudioEnabled ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}>{isAudioEnabled ? 'Mute Audio' : 'Unmute Audio'}</button>
-                <button onClick={toggleVideo} className={`px-4 py-2 rounded-md ${isVideoEnabled ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}>{isVideoEnabled ? 'Hide Video' : 'Show Video'}</button>
-            </div>
-        </div>
-    );
-};
+          showPasswordModal={showPasswordModal}
+          isCurrentCallAwaitingPassword={!!currentCallAwaitingPassword}
+          passwordInput={privateCallPassword}
+          setPasswordInput={setPrivateCallPassword}
+          handlePasswordSubmit={handlePasswordSubmit}
+          closePasswordModal={closePasswordModal}
+        />
+      </div>
+    </div>
+  );
+}
 
 export default CallLayout;

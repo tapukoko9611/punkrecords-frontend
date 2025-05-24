@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = '/api/users';
+const API_BASE_URL = (process.env.API_BASE_URL|| "") + '/api/users';
 
 const authApi = {
     login: async (userName, password) => {

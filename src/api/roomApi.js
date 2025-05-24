@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = (process.env.API_BASE_URL|| "") + '/api/rooms';
+const API_BASE_URL = (process.env.API_BASE_URL|| "https://punkrecords-backend.onrender.com") + '/api/rooms';
 
 const roomApi = {
     checkRoomName: async (token, roomName) => {

@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = (process.env.API_BASE_URL|| "") + '/api/calls';
+const API_BASE_URL = (process.env.API_BASE_URL|| "https://punkrecords-backend.onrender.com") + '/api/calls';
 
 const callApi = {
     checkCallName: async (token, callName) => {

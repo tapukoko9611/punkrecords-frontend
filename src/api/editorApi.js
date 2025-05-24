@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = (process.env.API_BASE_URL|| "") + '/api/editors';
+const API_BASE_URL = (process.env.API_BASE_URL|| "https://punkrecords-backend.onrender.com") + '/api/editors';
 
 const editorApi = {
     checkEditorName: async (token, editorName) => {

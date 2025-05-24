@@ -1,23 +1,26 @@
+// SocketContext.js (modified)
 import React, { createContext, useState, useEffect } from 'react';
 import { io } from 'socket.io-client';
 
 export const SocketContext = createContext(null);
 
 export const SocketProvider = ({ children }) => {
-    const [socket, setSocket] = useState(null);
+  const backendURL = process.env.REACT_APP_SOCKET_URL || 'http://localhost:5000';
 
-    useEffect(() => {
-        const newSocket = io('http://localhost:5000/');
-        setSocket(newSocket);
+  const [socket, setSocket] = useState(null);
 
-        return () => {
-            newSocket.disconnect();
-        };
-    }, []);
+  useEffect(() => {
+    const newSocket = io(backendURL);
+    setSocket(newSocket);
 
-    return (
-        <SocketContext.Provider value={socket}>
-            {children}
-        </SocketContext.Provider>
-    );
+    return () => {
+      newSocket.disconnect();
+    };
+  }, [backendURL]);
+
+  return (
+    <SocketContext.Provider value={socket}>
+      {children}
+    </SocketContext.Provider>
+  );
 };
